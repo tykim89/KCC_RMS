@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="RmsQna">
+
+	<typeAlias  alias="pagingVO" type="rms.com.qna.qnafrq.vo.DefaultVO"/>
+	<typeAlias alias="qna" type="rms.com.qna.qnaboard.vo.QnaVO"/>
+	<resultMap id="qna" class="rms.com.qna.qnaboard.vo.QnaVO">
+		<result property="qna_quest_no" column="QNA_QUEST_NO"/>
+		<result property="qna_quest_title" column="QNA_QUEST_TITLE"/>
+		<result property="qna_quest_content" column="QNA_QUEST_CONTENT"/>
+		<result property="qna_quest_hits" column="QNA_QUEST_HITS"/>
+		<result property="qna_quest_scr_tf" column="QNA_QUEST_SCR_TF"/>	
+		<result property="writer" column="WRITER"/>
+		<result property="write_date" column="WRITE_DATE"/>	
+		<result property="modifier" column="MODIFIER"/>
+		<result property="modi_date" column="MODI_DATE"/>
+		
+		<result property="enable_tf" column="ENABLE_TF"/>
+		<result property="version" column="VERSION"/>
+		<result property="qna_quest_pw" column="QNA_QUEST_PW"/>
+		<result property="qna_type_code" column="QNA_TYPE_CODE"/>
+		<result property="reple_cnt" column="REPLE_CNT"/>
+		<result property="writer_email" column="WRITER_EMAIL"/>
+						
+	</resultMap>
+	
+<!-- 	QNA 목록 -->
+<!-- 	<select id="qnaDAO.qnaBoardlist" parameterClass="java.util.HashMap" resultMap="qna"> -->
+<!-- 		SELECT QNA_QUEST_NO, QNA_QUEST_TITLE, QNA_QUEST_CONTENT, QNA_QUEST_HITS, QNA_QUEST_SCR_TF, WRITER, -->
+<!-- 		WRITE_DATE, MODIFIER, MODI_DATE, ENABLE_TF, VERSION, QNA_QUEST_PW, QNA_TYPE_CODE, -->
+<!--         REPLE_CNT, WRITER_EMAIL -->
+<!-- 		FROM QNA_QUEST -->
+<!-- 		WHERE QNA_QUEST_NO = QNA_QUEST_NO -->
+<!-- 		 <isNotEmpty property="searchValue"> -->
+<!-- 		 	<isEqual property="searchKey" compareValue="title"> -->
+<!-- 		 		AND QNA_QUEST_TITLE LIKE '%'||#searchValue#||'%' -->
+<!-- 		 	</isEqual> -->
+<!-- 		 	<isEqual property="searchKey" compareValue="content"> -->
+<!-- 		 		AND QNA_QUEST_CONTENT LIKE '%'||#searchValue#||'%' -->
+<!-- 		 	</isEqual> -->
+<!-- 		 </isNotEmpty> -->
+	
+<!-- 	</select> -->
+
+	<select id="qnaDAO.qnaBoardlist" parameterClass="pagingVO" resultClass="qna">
+		SELECT 
+			A.QNA_QUEST_NO, A.QNA_QUEST_TITLE, A.QNA_QUEST_CONTENT, A.QNA_QUEST_HITS, A.QNA_QUEST_SCR_TF, A.WRITER,
+			A.WRITE_DATE, MODIFIER, A.MODI_DATE, ENABLE_TF, A.VERSION, A.QNA_QUEST_PW, A.QNA_TYPE_CODE,
+       		A.REPLE_CNT, WRITER_EMAIL, NUM
+		FROM (
+				SELECT ROWNUM RNUM, S.*
+				FROM (
+						SELECT
+							QNA_QUEST_NO, QNA_QUEST_TITLE, QNA_QUEST_CONTENT, QNA_QUEST_HITS, QNA_QUEST_SCR_TF, WRITER,
+							WRITE_DATE, MODIFIER, MODI_DATE, ENABLE_TF, VERSION, QNA_QUEST_PW, QNA_TYPE_CODE,
+		       				REPLE_CNT, WRITER_EMAIL, RANK() OVER(ORDER BY WRITE_DATE ASC) AS NUM
+		        		FROM QNA_QUEST
+		        		WHERE QNA_QUEST_NO = QNA_QUEST_NO 
+		        		AND ENABLE_TF = 'T'
+		        		<isEqual prepend="AND" property="searchCondition" compareValue="title">
+					 		QNA_QUEST_TITLE LIKE '%'||#searchKeyword#||'%'
+					 	</isEqual>
+					 	<isEqual prepend="AND" property="searchCondition" compareValue="content">
+					 		QNA_QUEST_CONTENT LIKE '%'||#searchKeyword#||'%'
+					 	</isEqual>
+					 	<isEqual prepend="AND" property="searchCondition" compareValue="writer">
+					 		WRITER LIKE '%'||#searchKeyword#||'%'
+					 	</isEqual>
+					 	ORDER BY WRITE_DATE DESC
+		        )S		
+		)A		
+	<![CDATA[ WHERE ROWNUM <= #recordCountPerPage# and RNUM > #firstIndex# ]]>	
+	</select>
+	
+<!-- 	QNA_상세목록 -->
+	<select id="qnaDAO.qnaBoarddetail" resultMap="qna">
+	 	 SELECT QNA_QUEST_NO, QNA_QUEST_TITLE, QNA_QUEST_CONTENT, QNA_QUEST_HITS, QNA_QUEST_SCR_TF, WRITER,
+		WRITE_DATE, MODIFIER, MODI_DATE, ENABLE_TF, VERSION, QNA_QUEST_PW, QNA_TYPE_CODE,
+        REPLE_CNT, WRITER_EMAIL
+		FROM QNA_QUEST
+		WHERE QNA_QUEST_NO = #qna_quest_no#
+	</select>
+	
+	<insert id="qnaDAO.qnaInsertBoard" parameterClass="qna">
+		INSERT INTO QNA_QUEST (qna_quest_no, qna_quest_title, qna_quest_content, qna_quest_hits,
+		qna_quest_scr_tf, writer, write_date, enable_tf, version, qna_quest_pw, qna_type_code,
+		reple_cnt, writer_email)
+		VALUES (#qna_quest_no#, #qna_quest_title#, #qna_quest_content#, 0,
+		#qna_quest_scr_tf#, #writer#, SYSDATE, 'T', 1, #qna_quest_pw#, #qna_type_code#,
+		0, #writer_email#)		
+	</insert>
+	
+	<update id="qnaDAO.qnaDeleteBoard" parameterClass="java.util.HashMap">
+		<![CDATA[
+			UPDATE QNA_QUEST SET
+			MODIFIER = #writer#,
+			MODI_DATE=SYSDATE,
+			ENABLE_TF = 'F'
+			WHERE QNA_QUEST_NO	
+		]]>					
+		<iterate prepend="IN" property="checkList" open="(" close=")" conjunction=","> 
+      	 #checkList[]# 
+    	</iterate>   
+	</update>
+	
+		<update id="qnaDAO.qnaDeleteDetailBoard">
+			<![CDATA[
+			UPDATE QNA_QUEST SET
+			MODIFIER = #writer#,
+			MODI_DATE=SYSDATE,
+			ENABLE_TF = 'F'
+			WHERE QNA_QUEST_NO = #qna_quest_no#
+		]]>	
+	</update>
+	
+	
+	<select id="qnaDAO.qnaPWcheck" resultMap="qna">
+		SELECT QNA_QUEST_NO, QNA_QUEST_TITLE, QNA_QUEST_CONTENT, QNA_QUEST_HITS, QNA_QUEST_SCR_TF, WRITER,
+		WRITE_DATE, MODIFIER, MODI_DATE, ENABLE_TF, VERSION, QNA_QUEST_PW, QNA_TYPE_CODE, REPLE_CNT, WRITER_EMAIL
+		FROM QNA_QUEST   
+		WHERE QNA_QUEST_PW = #qna_quest_pw#
+	</select>
+	
+	<select id="qnaDAO.qnacheckPW" resultClass="java.lang.String">
+		SELECT QNA_QUEST_PW
+		FROM QNA_QUEST
+		WHERE QNA_QUEST_NO = #qna_quest_no#
+	</select>
+	
+	<update id="qnaDAO.readcountUp" parameterClass="java.util.HashMap">
+		UPDATE QNA_QUEST
+   		SET QNA_QUEST_HITS = QNA_QUEST_HITS+1
+ 		WHERE QNA_QUEST_NO = #qna_quest_no#
+	</update>
+	
+	<update id="qnaDAO.qnaUpdateBoard" parameterClass="qna"> 
+	<![CDATA[
+		UPDATE QNA_QUEST SET
+		 
+		QNA_QUEST_TITLE=#qna_quest_title#,
+		QNA_QUEST_CONTENT=#qna_quest_content#,
+		MODIFIER=#writer#,
+		MODI_DATE=SYSDATE,
+		VERSION = VERSION+1,
+		QNA_TYPE_CODE = #qna_type_code#,
+		WRITER_EMAIL=#writer_email#,
+		QNA_QUEST_PW = #qna_quest_pw#
+		WHERE QNA_QUEST_NO=#qna_quest_no#
+	]]>
+	</update>
+	
+		<select id="qnaDAO.selectSampleListTotCnt" parameterClass="pagingVO" resultClass="int">
+
+			SELECT COUNT(*) totcnt
+			FROM QNA_QUEST
+			WHERE QNA_QUEST_NO = QNA_QUEST_NO 
+			AND ENABLE_TF = 'T'
+			<isEqual prepend="AND" property="searchCondition" compareValue="title">
+	 		QNA_QUEST_TITLE LIKE '%'||#searchKeyword#||'%'
+	 		</isEqual>
+	 		<isEqual prepend="AND" property="searchCondition" compareValue="content">
+	 		QNA_QUEST_CONTENT LIKE '%'||#searchKeyword#||'%'
+	 		</isEqual>
+	 		<isEqual prepend="AND" property="searchCondition" compareValue="writer">
+			WRITER LIKE '%'||#searchKeyword#||'%'
+			</isEqual>
+			
+		</select>
+
+	
+</sqlMap>

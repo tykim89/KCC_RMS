@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<!-- 
+	수정일                 수정자                          수정내용
+  =========     =======    =================================================
+  2011.8.26   	 서준식     	 	SSO 로그인을 위한 쿼리 추가
+  2011.09.27    서준식              컬럼 변경 SUB_DN 을  CRTFC_DN_VALUE 로 변경
+  2011.09.28    서준식              컬럼 변경 entrprsmber_id 을  ENTRPRS_MBER_ID 로 변경
+-->
+
+<sqlMap namespace="FaqManage">
+
+	<!-- 별칭주기 -->
+	<typeAlias alias="faq" type="rms.com.faq.vo.FaqVO"/>
+	<typeAlias alias="pagingVO" type="rms.com.qna.qnafrq.vo.DefaultVO"/>
+	
+	
+<!-- 	FAQ resultMap // 속성명을 똑같이 주어 resultMap 없이 typeAlias로 자동 매핑 가능
+	<resultMap id="faqResult" class="faq">
+		<result property="faq_no" column="faq_no"/>
+		<result property="faq_type_code" column="faq_type_code"/>
+		<result property="faq_quest_content" column="faq_quest_content"/>
+		<result property="faq_answer_content" column="faq_answer_content"/>		
+		<result property="writer" column="writer"/> 
+		<result property="write_date" column="write_date"/>
+	</resultMap> -->
+	
+	
+
+	
+	<!-- FAQ 목록조회, 검색조회 -->
+ 	<select id="faqSearchList" parameterClass="pagingVO" resultClass="faq">
+		<![CDATA[
+		select no, faq_no, faq_type_name, 
+                 faq_quest_content, writer, write_date
+        from (
+        		select rownum rnum, s.*
+        		from (
+						select RANK() over(ORDER BY write_date ASC) as no, faq_no, (select detail_code_name
+				                			 from   code_detail
+				                			 where  detail_code = faq_type_code) as faq_type_name, 
+				      			 faq_quest_content, writer, write_date
+						from	 faq
+						where enable_tf = 'T'
+		]]>
+
+				<isEqual property="searchCondition" compareValue="faq_type_code">
+					AND (select detail_code_name
+                			 from   code_detail
+                			 where  detail_code = faq_type_code) LIKE '%'||#searchKeyword#||'%'
+				</isEqual>
+				<isEqual property="searchCondition" compareValue="faq_quest_content">
+					AND UPPER(faq_quest_content) LIKE UPPER('%'||#searchKeyword#||'%')
+				</isEqual>
+				<isEqual property="searchCondition" compareValue="writer">
+					AND UPPER(writer) LIKE UPPER('%'||#searchKeyword#||'%')
+				</isEqual>
+				order by write_date desc
+
+			)s
+		)
+		<![CDATA[ 
+		where rownum <= #recordCountPerPage# and rnum > #firstIndex# 
+		 ]]>
+	</select>
+	 
+	
+	
+	<!-- FAQ 상세조회 -->
+	<select id="faqContent" parameterClass="String" resultClass="faq">
+		select faq_no,
+				 (select detail_code_name
+        		  from   code_detail
+        		  where  detail_code = faq_type_code) as faq_type_name, 
+        		faq_type_code, faq_quest_content, faq_answer_content, writer
+		from faq
+		where faq_no = #faq_no#
+	</select>
+	
+	
+	<!-- FAQ 등록 -->
+ 	<insert id="faqInsert" parameterClass="faq">
+ 		insert into faq(faq_no, faq_quest_content, faq_answer_content, writer, write_date, enable_tf, version, faq_type_code)
+		values(#faq_no#, #faq_quest_content#, #faq_answer_content#, #writer#, sysdate, 'T', 1, #faq_type_code#)
+ 	</insert>
+
+
+	<!-- FAQ 수정 -->
+	<update id="faqUpdate" parameterClass="faq">
+		update faq
+		set	  faq_quest_content = #faq_quest_content#, faq_answer_content = #faq_answer_content#, 
+				  modifier = #modifier#, modi_date = sysdate, version=version+1, faq_type_code = #faq_type_code#
+		where  faq_no = #faq_no#
+	</update>
+	
+	
+	<!-- FAQ 삭제 -->
+	<delete id="faqDelete" parameterClass="String">
+		update 	faq
+		set		enable_tf = 'F'
+		where 	faq_no=#faq_no#
+	</delete>
+	
+	
+	<!-- 페이지 토탈 카운트 -->
+	<select id="faqDAO.selectSampleListTotCnt" parameterClass="pagingVO" resultClass="int">
+		SELECT 	COUNT(*) totcnt
+		FROM 	FAQ
+		WHERE 	enable_tf = 'T'
+				<isEqual property="searchCondition" compareValue="faq_type_code">
+					AND (select detail_code_name
+                			 from   code_detail
+                			 where  detail_code = faq_type_code) LIKE '%'||#searchKeyword#||'%'
+				</isEqual>
+				<isEqual property="searchCondition" compareValue="faq_quest_content">
+					AND UPPER(faq_quest_content) LIKE UPPER('%'||#searchKeyword#||'%')
+				</isEqual>
+				<isEqual property="searchCondition" compareValue="writer">
+					AND UPPER(writer) LIKE UPPER('%'||#searchKeyword#||'%')
+				</isEqual>
+	</select>
+	
+</sqlMap>

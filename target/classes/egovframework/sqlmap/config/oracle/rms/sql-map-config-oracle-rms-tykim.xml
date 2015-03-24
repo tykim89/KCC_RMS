@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMapConfig PUBLIC "-//iBATIS.com//DTD SQL Map Config 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-config-2.dtd">
+
+<sqlMapConfig>
+	<!-- SQLMap파일 추가시 아래와 같이 추가 -->
+	
+	<sqlMap resource="egovframework/sqlmap/rms/com/faq/FaqManage_SQL.xml"/>
+	<sqlMap resource="egovframework/sqlmap/rms/com/recNotice/RecNoticeManage_SQL.xml"/>
+	<sqlMap resource="egovframework/sqlmap/rms/com/recProcess/RecProcessManage_SQL.xml"/>
+	<sqlMap resource="egovframework/sqlmap/rms/com/recProcess/RecProgStepItemManage_SQL.xml"/>
+	<sqlMap resource="egovframework/sqlmap/rms/com/appForm/AppFormManage_SQL.xml"/>
+	<sqlMap resource="egovframework/sqlmap/rms/com/appForm/AppItemManage_SQL.xml"/>
+	<sqlMap resource="egovframework/sqlmap/rms/com/attfile/AttFileManage_SQL.xml"/>
+	
+</sqlMapConfig>

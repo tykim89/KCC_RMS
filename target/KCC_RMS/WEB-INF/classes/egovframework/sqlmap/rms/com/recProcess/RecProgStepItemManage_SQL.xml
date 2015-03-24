@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<!-- 
+	수정일                 수정자                          수정내용
+  =========     =======    =================================================
+  2011.8.26   	 서준식     	 	SSO 로그인을 위한 쿼리 추가
+  2011.09.27    서준식              컬럼 변경 SUB_DN 을  CRTFC_DN_VALUE 로 변경
+  2011.09.28    서준식              컬럼 변경 entrprsmber_id 을  ENTRPRS_MBER_ID 로 변경
+-->
+
+<sqlMap namespace="RecProgStepItemManage">
+
+
+	<!-- 별칭주기 -->
+	<typeAlias  alias="recProgStepItem" type="rms.com.recProcess.vo.RecProgStepItemVO"/>
+
+
+	<!-- 전형단계항목 등록 -->
+	<insert id="recProgStepItemInsert" parameterClass="recProgStepItem">
+		INSERT INTO REC_PROG_STEP_ITEM (REC_PROG_NO, STEP_ITEM_CODE , STEP_SEQ, WRITER, WRITE_DATE, ENABLE_TF, VERSION)
+		VALUES (#rec_prog_no#, #step_item_code#, #step_seq#, #writer#, SYSDATE, 'T', 1)
+	</insert>
+
+
+	<!-- 전형단계항목 수정 -->
+	<update id="recProgStepItemUpdate" parameterClass="recProgStepItem">
+		UPDATE  REC_PROG_STEP_ITEM
+		SET 		STEP_SEQ = #step_seq#, MODIFIER = #modifier#, MODI_DATE = SYSDATE, VERSION = version+1
+		WHERE 	REC_PROG_NO = #rec_prog_no#
+		    AND 	STEP_ITEM_CODE = #step_item_code#
+	</update>
+	
+	
+	<!-- 전형단계항목 삭제 -->
+	<update id="recProgStepItemDelete" parameterClass="String">
+		UPDATE 	REC_PROG_STEP_ITEM
+		SET 		ENABLE_TF = 'F'
+		WHERE 	REC_PROG_NO = #rec_prog_no#
+	</update>
+	
+	
+	
+	
+	
+
+	
+	
+	
+</sqlMap>

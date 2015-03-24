@@ -1,0 +1,128 @@
+/* layPop */
+.layPop {
+	position:fixed;
+	background:#fff;
+	z-index:99999;
+	left:50%;
+	top:50%; 
+	overflow:hidden;
+	display:none;}
+.layPop .wrap {
+	border:1px solid #407ec7;
+	position:relative;
+	overflow:hidden;
+}
+.layPop .wrap .cont {
+	height:100%;
+}
+.layPop .wrap .cont .pop_list{
+	overflow:hidden;
+}
+.layPop .wrap .cont .pop_list > dt{
+	height:20px;
+	padding:5px 0 5px 25px;
+	color:#ffffff;font-size:15px;
+	font-weight:bold;
+	background:url("/KCC_RMS/images/rms/cmn/common/table_th2_bg.gif");
+	background-repeat: repeat-x;
+	background-position:0 0;
+}
+.layPop .wrap .cont .pop_list > dd{
+		padding:17px 10px 10px 30px;
+	overflow:hidden;
+}
+.layPop .wrap .cont .pop_list > dd .con_wrap{
+	overflow:hidden;
+	overflow-y:scroll;
+}
+.layPop .wrap .cont .pop_list > dd .con_wrap.no_scroll{
+	overflow:hidden;
+}
+.layPop .con_wrap .wcont{
+	padding-right:20px;
+}
+.layPop .con_wrap .wcont h3 {
+	font-size:15px;
+	color:#151e26;
+	font-weight:bold;
+	text-align:center;
+}
+.layPop .wrap .close {
+	position:absolute;
+	right:10px;top:3px;
+}
+.pop_btn {
+	text-align:center; 
+	margin-top:15px;
+}
+
+/* loding bar */
+.layPop .loding {
+	font-size:14px;
+	color:#11181e;
+	font-weight:bold;
+	text-align:center;
+	padding:50px 0 0 0;
+	width:470px;
+	height:110px;
+	border:1px solid #407ec7;
+}
+.layPop .loding .logo {
+	padding-top:20px;
+}
+
+
+.popup_bg {
+	position:absolute;
+	left:0;
+	top:0;
+	width:100%;
+	height:100%;
+	background:#000;
+	opacity:.2;
+	filter:alpha(opacity=60);
+	z-index:100;
+	display:none;
+}
+
+/* 팝업텍스트  */
+.noti_box {
+	border:4px solid #f3f3f5;
+	padding:10px 15px 10px 15px;
+}
+.noti_box p {
+	font-size:12px; 
+	font-weight:bold; 
+	text-align:center;
+}
+.noti_box dd {
+	padding:0 0 0 0;
+}
+.noti_box dd ul{}
+
+.login_con  ul.form {
+	margin:10px 0 0 42px; 
+	display:inline-block; 
+	width:270px;
+	float:left;
+}
+.login_con  .form li {
+	margin-top:3px;
+	position:relative;
+	height:26px;
+}
+.login_con  .form label.tit{
+	display:inline-block;
+	*display:inline;
+	zoom:1;
+	width:62px;
+	color:#404040;
+	font-weight:bold;
+	font-size:12px;
+	vertical-align:middle;
+}
+.login_con  .form span.input{}
+.login_con  span{ 
+	margin-top:12px;
+	 margin-left:5px;
+}

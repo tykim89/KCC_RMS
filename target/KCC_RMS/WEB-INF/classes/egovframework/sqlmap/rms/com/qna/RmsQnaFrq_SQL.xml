@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="RmsQnaFrq">
+
+	<typeAlias  alias="pagingVO" type="rms.com.qna.qnafrq.vo.DefaultVO"/>
+	<typeAlias alias="qnaFrq" type="rms.com.qna.qnafrq.vo.QnaFrqVO"/>
+	<resultMap id="qnaFrq" class="rms.com.qna.qnafrq.vo.QnaFrqVO">
+		<result property="frq_answer_no" column="FRQ_ANSWER_NO"/>
+		<result property="frq_answer_content" column="FRQ_ANSWER_CONTENT"/>
+		<result property="writer" column="WRITER"/>
+		<result property="write_date" column="WRITE_DATE"/>
+		<result property="modifier" column="MODIFIER"/>	
+		<result property="modi_date" column="MODI_DATE"/>
+		<result property="enable_tf" column="ENABLE_TF"/>	
+		<result property="version" column="VERSION"/>
+		<result property="qna_type_code" column="QNA_TYPE_CODE"/>						
+	</resultMap>
+	
+	<select id="qnqFrqDAO.qnaFrqBoardlist" parameterClass="pagingVO" resultClass="qnaFrq">
+		SELECT A.FRQ_ANSWER_NO, A.FRQ_ANSWER_CONTENT, A.WRITER, A.WRITE_DATE, 
+		A.MODIFIER, A.MODI_DATE, A.ENABLE_TF, A.VERSION, A.QNA_TYPE_CODE, NUM
+		FROM (
+			SELECT ROWNUM RNUM, S.*
+			FROM (
+				SELECT 
+				FRQ_ANSWER_NO, FRQ_ANSWER_CONTENT, WRITER, WRITE_DATE, MODIFIER, 
+				MODI_DATE, ENABLE_TF, VERSION, QNA_TYPE_CODE, RANK() OVER(ORDER BY WRITE_DATE ASC) AS NUM
+				FROM FRQ_ANSWER			
+				WHERE 	FRQ_ANSWER_NO=FRQ_ANSWER_NO	
+				AND ENABLE_TF = 'T'
+
+			 	<isEqual prepend="AND" property="searchCondition" compareValue="type">
+			 		QNA_TYPE_CODE LIKE '%'||#searchKeyword#||'%'
+			 	</isEqual>
+			 	<isEqual prepend="AND" property="searchCondition" compareValue="content">
+			 		FRQ_ANSWER_CONTENT LIKE '%'||#searchKeyword#||'%'
+			 	</isEqual>
+			 	ORDER BY WRITE_DATE DESC
+			)S		
+		)A
+		 <![CDATA[ WHERE ROWNUM <= #recordCountPerPage# and RNUM > #firstIndex# ]]>
+	</select>
+	
+	
+	<select id="qnaFrqDAO.qnaFrqBoarddetail" resultMap="qnaFrq">
+		SELECT FRQ_ANSWER_NO, FRQ_ANSWER_CONTENT, WRITER, WRITE_DATE, MODIFIER, MODI_DATE, ENABLE_TF,
+		VERSION, QNA_TYPE_CODE
+		FROM FRQ_ANSWER
+		WHERE FRQ_ANSWER_NO = #frq_answer_no#
+	</select>
+	
+	<update id="qnaFrqDAO.qnaFrqUpdateBoard" parameterClass="qnaFrq">
+		<![CDATA[
+		UPDATE FRQ_ANSWER SET
+		FRQ_ANSWER_CONTENT=#frq_answer_content#,
+		MODIFIER=#writer#,
+		MODI_DATE=SYSDATE,
+		VERSION = VERSION+1,
+		QNA_TYPE_CODE = #qna_type_code#
+		WHERE FRQ_ANSWER_NO=#frq_answer_no#
+			]]>		
+	</update>
+	
+	<insert id="qnaFrqDAO.qnaFrqInsertBoard" parameterClass="qnaFrq">
+		<![CDATA[
+		INSERT INTO FRQ_ANSWER (frq_answer_no, frq_answer_content, writer, write_date, 
+		enable_tf, version, qna_type_code)
+		VALUES (#frq_answer_no#, #frq_answer_content#, #writer#,
+		SYSDATE,'T',1, #qna_type_code#)	
+		]]>		
+	</insert>
+	
+	<update id="qnaFrqDAO.qnaFrqDeleteBoard" parameterClass="java.util.HashMap">
+		<![CDATA[
+			UPDATE FRQ_ANSWER SET
+			MODIFIER = #writer#,
+			MODI_DATE=SYSDATE,
+			VERSION = VERSION+1,
+			ENABLE_TF = 'F'
+			WHERE FRQ_ANSWER_NO	
+		]]>					
+		<iterate prepend="IN" property="checkList" open="(" close=")" conjunction=","> 
+      	 #checkList[]# 
+    	</iterate>   
+	</update>
+	
+<!-- 	<select id="qnaFrqDAO.qnaFrqList" resultMap="qnaFrq"> -->
+<!-- 		<![CDATA[ -->
+<!-- 		SELECT DISTINCT FRQ_ANSWER_CONTENT -->
+<!-- 		FROM FRQ_ANSWER -->
+<!-- 		WHERE QNA_TYPE_CODE = #qna_type_code# -->
+<!-- 		]]>	 -->
+<!-- 	</select> -->
+	
+<!-- 	<select id="qnaFrqDAO.qnaFrqTypeList" resultMap="qnaFrq"> -->
+<!-- 		<![CDATA[ -->
+<!--  		SELECT DISTINCT QNA_TYPE_CODE -->
+<!-- 		FROM FRQ_ANSWER -->
+<!-- 		]]> -->
+<!-- 	</select> -->
+	
+	<select id="qnaFrqDAO.qnaTypeCode" resultClass="qnaFrq">
+		<![CDATA[
+ 		SELECT DISTINCT QNA_TYPE_CODE
+		FROM FRQ_ANSWER
+		ORDER BY QNA_TYPE_CODE DESC
+		]]>
+	</select>
+	
+		<select id="qnaFrqDAO.qnaFrqContentList" resultClass="qnaFrq">
+		<![CDATA[
+ 		SELECT FRQ_ANSWER_CONTENT
+		FROM FRQ_ANSWER
+		WHERE QNA_TYPE_CODE = #qna_type_code#
+		]]>
+	</select>
+	
+		<update id="qnaFrqDAO.qnaFrqDeleteDetailBoard">
+			<![CDATA[
+			UPDATE FRQ_ANSWER SET
+			MODIFIER = #writer#,
+			MODI_DATE=SYSDATE,
+			VERSION = VERSION+1,
+			ENABLE_TF = 'F'
+			WHERE FRQ_ANSWER_NO = #frq_answer_no#
+		]]>	
+	</update>
+	
+	<select id="qnaFrqDAO.selectSampleListToCnt" parameterClass="pagingVO" resultClass="int">
+
+		SELECT COUNT(*) totcnt
+		FROM FRQ_ANSWER
+		WHERE FRQ_ANSWER_NO=FRQ_ANSWER_NO
+		AND ENABLE_TF = 'T'		
+		<isEqual prepend="AND" property="searchCondition" compareValue="type">
+	 		QNA_TYPE_CODE LIKE '%'||#searchKeyword#||'%'
+	 	</isEqual>
+	 	<isEqual prepend="AND" property="searchCondition" compareValue="content">
+	 		FRQ_ANSWER_CONTENT LIKE '%'||#searchKeyword#||'%'
+	 	</isEqual>
+	
+	</select>
+
+</sqlMap>

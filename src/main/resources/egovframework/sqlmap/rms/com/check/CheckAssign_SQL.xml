@@ -1,0 +1,555 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="checkAssign">
+	<typeAlias alias="checkAssignVO" type="rms.com.check.vo.CheckAssignVO" />
+	<typeAlias alias="assignedUserVO" type="rms.com.check.vo.AssignedUserVO" />
+	<typeAlias alias="adminVO" type="rms.com.sys.vo.AdminVO" />
+	<typeAlias alias="checkResVO" type="rms.com.check.vo.CheckResVO" />
+	<typeAlias alias="pfaVO" type="rms.com.check.vo.PagingForAdminVO" />
+
+	<select id="checkAssignDAO.getRecFieldAction" resultClass="checkAssignVO">
+		<![CDATA[
+			SELECT REC_NOTI_NO, REC_NOTI_TITLE
+			FROM REC_NOTI
+			WHERE	TO_CHAR(REC_END_DATE, 'YY/MM/DD') >= TO_CHAR(SYSDATE, 'YY/MM/DD')
+			AND		ENABLE_TF = 'T'
+	        
+		]]>
+	</select>
+
+	<select id="checkAssignDAO.getCompanyAction" resultClass="adminVO">
+		<![CDATA[
+			SELECT COMPANY_NO, COMPANY_NAME
+			FROM COMPANY
+			WHERE ENABLE_TF = 'T'
+		]]>
+	</select>
+
+	<select id="checkAssignDAO.getDeptAction" resultClass="adminVO">
+		<![CDATA[
+			SELECT DEP_NO, DEP_NAME
+			FROM DEPT
+			WHERE ENABLE_TF = 'T'
+		]]>
+	</select>
+
+	<select id="checkAssignDAO.getPositionAction" resultClass="adminVO">
+		<![CDATA[
+			SELECT DETAIL_CODE_NAME AS detail_code_name, DETAIL_CODE AS position_code
+			FROM CODE_DETAIL
+			WHERE GROUP_CODE = 'POSITION'
+		]]>
+	</select>
+
+
+	<select id="checkAssignDAO.getBaseUserListAction" parameterClass="java.util.HashMap" resultClass="AssignedUserVO">
+		<![CDATA[
+			SELECT DISTINCT AU.APP_USER_NO, AU.APP_USER_NAME 
+			FROM APP_USER AU	
+			WHERE AU.REC_NOTI_NO = #rec_noti_no#
+			AND AU.FINAL_SUBMIT_TF = 'T'
+			
+		]]>
+		<isNotEmpty property="targetList">
+			AND	AU.APP_USER_NO 
+			<iterate prepend="NOT IN" property="targetList" open="(" close=")" conjunction=",">
+					#targetList[]# 
+			</iterate>
+		</isNotEmpty>
+	</select>
+	
+	<!-- 전체 검토자ID 리스트 가져오기 -->
+	<select id="checkAssignDAO.getAllChkUsrListAction" resultClass="java.lang.String">
+		<![CDATA[
+			SELECT AD.ADMIN_ID
+			FROM ADMIN AD, AUTH_BY_ADMIN ABA, DEPT DE, COMPANY CO,
+				(SELECT 	DETAIL_CODE, DETAIL_CODE_NAME
+				 FROM 		CODE_DETAIL
+				 WHERE 		GROUP_CODE = 'POSITION') A
+			WHERE 	CO.COMPANY_NO = DE.COMPANY_NO
+			AND 	DE.DEP_NO = AD.DEP_NO
+			AND 	AD.POSITION_CODE = A.DETAIL_CODE
+			AND 	AD.ADMIN_ID = ABA.ADMIN_ID
+			AND 	ABA.AUTH_ID='AUTH2014052100000028'
+		]]>
+	</select>
+	
+	
+	<!-- 검토자리스트 출력 -->
+	<select id="checkAssignDAO.getAdminListAction" parameterClass="adminVO" resultClass="adminVO">
+		<![CDATA[
+			SELECT CO.COMPANY_NAME, DE.DEP_NAME, A.DETAIL_CODE_NAME, AD.ADMIN_NAME, AD.ADMIN_ID, AD.ADMIN_EMAIL_ADDR, AD.ADMIN_PHONE_NUM, AD.ADMIN_TEL_NUM
+			FROM ADMIN AD, AUTH_BY_ADMIN ABA, DEPT DE, COMPANY CO,
+				(SELECT 	DETAIL_CODE, DETAIL_CODE_NAME
+				 FROM 		CODE_DETAIL
+				 WHERE 		GROUP_CODE = 'POSITION') A
+			WHERE 	CO.COMPANY_NO = DE.COMPANY_NO
+			AND 	DE.DEP_NO = AD.DEP_NO
+			AND 	AD.POSITION_CODE = A.DETAIL_CODE
+			AND 	AD.ADMIN_ID = ABA.ADMIN_ID
+			AND 	ABA.AUTH_ID='AUTH2014052100000028'
+		]]>
+		
+		<isNotNull property="admin_name">
+			AND AD.ADMIN_NAME LIKE '%'||#admin_name#||'%'
+		</isNotNull>
+		<isNotNull property="admin_id">
+			AND AD.ADMIN_ID LIKE '%'||#admin_id#||'%'
+		</isNotNull>
+		<isNotEmpty property="company_no">
+			AND CO.COMPANY_NO = #company_no#
+		</isNotEmpty>
+		<isNotEmpty property="dep_no">
+			AND DE.DEP_NO = #dep_no#
+		</isNotEmpty>
+		<isNotEmpty property="position_code">
+			AND AD.POSITION_CODE = #position_code#
+		</isNotEmpty>
+		
+		<![CDATA[
+			ORDER BY AD.ADMIN_NAME
+		]]>
+		
+	</select>
+
+	<!--추가시, 미할당된 지원자리스트 빼기 -->
+	<select id="checkAssignDAO.getAddUnassignedUsrAction"
+		parameterClass="java.util.Map" resultClass="AssignedUserVO">
+		<![CDATA[
+			SELECT DISTINCT AU.APP_USER_NO, AU.APP_USER_NAME 
+			FROM CHECK_RES CR, APP_USER AU	
+			WHERE CR.APP_USER_NO = AU.APP_USER_NO
+			AND CR.APP_USER_NO NOT IN (SELECT APP_USER_NO
+			FROM CHECK_RES	
+			WHERE ADMIN_ID = #adminTarget# )
+		]]>
+		<isNotEmpty property="recFieldNo">
+			AND CR.REC_NOTI_NO = #recFieldNo#
+		</isNotEmpty>
+		
+		<isNotNull property="list">
+			AND AU.APP_USER_NO
+			<iterate prepend="NOT IN" property="list" open="(" close=")"
+				conjunction=",">
+				#list[]#
+			</iterate>
+		</isNotNull>
+	</select>
+
+	<select id="checkAssignDAO.getRemoveUnassignedUsrAction"
+		parameterClass="java.util.Map" resultClass="AssignedUserVO">
+		<![CDATA[
+			SELECT AU.APP_USER_NO, AU.APP_USER_NAME
+			FROM APP_USER AU, REC_NOTI RN
+			WHERE AU.REC_NOTI_NO = RN.REC_NOTI_NO
+		]]>
+		
+		<isNotNull property="list">
+			AND AU.APP_USER_NO
+			<iterate prepend="NOT IN" property="list" open="(" close=")"
+				conjunction=",">
+				#list[]#
+			</iterate>
+		</isNotNull>
+	</select>
+
+	<!--추가시, 할당된 지원자리스트 더하기 -->
+	<select id="checkAssignDAO.getAddAssignedUsrAction"
+		parameterClass="java.util.Map" resultClass="AssignedUserVO">
+		<![CDATA[
+			SELECT AU.APP_USER_NO, AU.APP_USER_NAME
+			FROM APP_USER AU, REC_NOTI RN
+			WHERE AU.REC_NOTI_NO = RN.REC_NOTI_NO
+			
+		]]>
+		<isNotNull property="list">
+			AND AU.APP_USER_NO
+			<iterate prepend="IN" property="list" open="(" close=")"
+				conjunction=",">
+				#list[]#
+			</iterate>
+		</isNotNull>
+	</select>
+
+	<select id="checkAssignDAO.getRemoveAssignedUsrAction"
+		parameterClass="java.util.Map" resultClass="AssignedUserVO">
+		<![CDATA[
+			SELECT AU.APP_USER_NO, AU.APP_USER_NAME
+			FROM APP_USER AU, REC_NOTI RN
+			WHERE AU.REC_NOTI_NO = RN.REC_NOTI_NO
+			
+		]]>
+		<isNotNull property="list">
+			AND AU.APP_USER_NO
+			<iterate prepend="IN" property="list" open="(" close=")"
+				conjunction=",">
+				#list[]#
+			</iterate>
+		</isNotNull>
+		<isNull property="list">
+			AND 1=0
+		</isNull>
+	</select>
+
+	
+	<select id="checkAssignDAO.getStringByCheckUsrListAction" parameterClass="java.lang.String" resultClass="java.lang.String">
+		<![CDATA[
+			SELECT DISTINCT AD.ADMIN_ID
+			FROM ADMIN AD, AUTH_BY_ADMIN ABA, DEPT DE, COMPANY CO, CHECK_USER_BY_REC CUBR
+			WHERE 	CO.COMPANY_NO = DE.COMPANY_NO
+			AND 	DE.DEP_NO = AD.DEP_NO
+			AND 	AD.ADMIN_ID = ABA.ADMIN_ID
+			AND 	ABA.AUTH_ID='AUTH2014052100000028'
+			AND		CUBR.ADMIN_ID = AD.ADMIN_ID
+		]]>
+		<isNotEmpty>
+			AND 	CUBR.REC_NOTI_NO = #recFieldNo#
+		</isNotEmpty>
+	</select>
+	
+	<select id="checkAssignDAO.getChkUserListByRecFieldAction" parameterClass="java.lang.String" resultClass="adminVO">
+		<![CDATA[
+			SELECT DISTINCT AD.ADMIN_ID, CO.COMPANY_NAME, DE.DEP_NAME, A.DETAIL_CODE_NAME, AD.ADMIN_NAME, AD.ADMIN_EMAIL_ADDR, AD.ADMIN_PHONE_NUM, AD.ADMIN_TEL_NUM
+			FROM ADMIN AD, AUTH_BY_ADMIN ABA, DEPT DE, COMPANY CO, CHECK_USER_BY_REC CUBR,
+				(SELECT 	DETAIL_CODE, DETAIL_CODE_NAME
+				 FROM 		CODE_DETAIL
+				 WHERE 		GROUP_CODE = 'POSITION') A
+			WHERE 	CO.COMPANY_NO = DE.COMPANY_NO
+			AND 	DE.DEP_NO = AD.DEP_NO
+			AND 	AD.POSITION_CODE = A.DETAIL_CODE
+			AND 	AD.ADMIN_ID = ABA.ADMIN_ID
+			AND 	ABA.AUTH_ID='AUTH2014052100000028'
+			AND		CUBR.ADMIN_ID = AD.ADMIN_ID
+		]]>
+		<isNotEmpty>
+			AND 	CUBR.REC_NOTI_NO = #recFieldNo#
+		</isNotEmpty>
+	</select>
+	
+	<update id="checkAssignDAO.getUserListByRecFieldAction" parameterClass="java.util.Map">
+		<![CDATA[
+			INSERT INTO CHECK_USER_BY_REC (admin_id, writer, write_date, enable_tf, version, rec_noti_no)
+			VALUES (#admin_id#, #writer#, SYSDATE, 'T', '1', #recFieldNo#)
+			
+		]]>
+	</update>
+	<select id="checkAssignDAO.getCheckUserListAction" parameterClass="java.util.Map" resultClass="adminVO">
+		<![CDATA[
+			SELECT 	CO.COMPANY_NAME, DE.DEP_NAME, A.DETAIL_CODE_NAME, AD.ADMIN_NAME, AD.ADMIN_ID, AD.ADMIN_EMAIL_ADDR, AD.ADMIN_PHONE_NUM, AD.ADMIN_TEL_NUM
+			FROM 	ADMIN AD, DEPT DE, COMPANY CO,
+					(SELECT 	DETAIL_CODE, DETAIL_CODE_NAME
+				 	 FROM 		CODE_DETAIL
+				 	 WHERE 		GROUP_CODE = 'POSITION') A
+			WHERE 	CO.COMPANY_NO = DE.COMPANY_NO
+			AND 	DE.DEP_NO = AD.DEP_NO
+			AND 	AD.POSITION_CODE = A.DETAIL_CODE
+			]]>
+			<isNotNull property="list">
+				AND 	AD.ADMIN_ID
+				<iterate prepend="IN" property="list" open="(" close=")" conjunction=",">
+						#list[]#
+				</iterate>
+			</isNotNull>
+			
+		
+	</select>
+	
+	<select id="checkAssignDAO.getCheckUserListByRecField" parameterClass="java.lang.String" resultClass="adminVO">
+		<![CDATA[
+			SELECT 	CO.COMPANY_NAME, DE.DEP_NAME, A.DETAIL_CODE_NAME, AD.ADMIN_NAME, CUBR.ADMIN_ID, AD.ADMIN_EMAIL_ADDR, AD.ADMIN_PHONE_NUM, AD.ADMIN_TEL_NUM
+			FROM 	ADMIN AD, DEPT DE, COMPANY CO, CHECK_USER_BY_REC CUBR, REC_NOTI RN,
+					(SELECT 	DETAIL_CODE, DETAIL_CODE_NAME
+				 	 FROM 		CODE_DETAIL
+				 	 WHERE 		GROUP_CODE = 'POSITION') A
+			WHERE 	CO.COMPANY_NO = DE.COMPANY_NO
+			AND 	DE.DEP_NO = AD.DEP_NO
+			AND 	AD.ADMIN_ID = CUBR.ADMIN_ID
+			AND		CUBR.REC_NOTI_NO = RN.REC_NOTI_NO
+			AND 	AD.POSITION_CODE = A.DETAIL_CODE
+			AND		CUBR.REC_NOTI_NO = #recFieldNo#
+			]]>
+	</select>
+	
+	<select id="checkAssignDAO.getCheckUserListByRecFieldAction" parameterClass="java.lang.String" resultClass="java.lang.String">
+		<![CDATA[
+			SELECT 	CUBR.ADMIN_ID
+			FROM 	CHECK_USER_BY_REC CUBR, ADMIN AD, REC_NOTI RN
+			WHERE 	AD.ADMIN_ID = CUBR.ADMIN_ID
+			AND		RN.REC_NOTI_NO = CUBR.REC_NOTI_NO
+			AND		CUBR.REC_NOTI_NO = #recFieldNo#
+			]]>
+	</select>
+	
+	
+	
+	<select id="checkAssignDAO.getDetailUnassignAction" parameterClass="java.util.Map" resultClass="assignedUserVO">
+		<![CDATA[
+			SELECT DISTINCT AU.APP_USER_NO, AU.APP_USER_NAME
+			FROM CHECK_RES CR, APP_USER AU
+			WHERE CR.APP_USER_NO = AU.APP_USER_NO
+			AND	AU.FINAL_SUBMIT_TF='T'
+			AND AU.APP_USER_NO NOT IN (SELECT AU.APP_USER_NO
+										FROM CHECK_RES CR, APP_USER AU
+										WHERE CR.APP_USER_NO = AU.APP_USER_NO
+										AND CR.ADMIN_ID=#adminTarget#)
+			
+		]]>
+	</select>
+	
+	<select id="checkAssignDAO.countUnassignAction" parameterClass="java.lang.String" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*) cnt
+			FROM (SELECT DISTINCT AU.APP_USER_NO
+					FROM CHECK_RES CR, APP_USER AU
+					WHERE CR.APP_USER_NO = AU.APP_USER_NO
+					AND AU.APP_USER_NO NOT IN (SELECT AU.APP_USER_NO
+												FROM CHECK_RES CR, APP_USER AU
+												WHERE CR.APP_USER_NO = AU.APP_USER_NO
+												AND CR.ADMIN_ID=#adminTarget#))
+			
+		]]>
+	</select>
+	
+	<select id="checkAssignDAO.countAssignAction" parameterClass="java.lang.String" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*) cnt
+			FROM (SELECT 		CR.APP_USER_NO
+					FROM 		CHECK_RES CR, 		APP_USER AU
+					WHERE 		CR.APP_USER_NO = AU.APP_USER_NO
+					AND 		CR.ADMIN_ID = #adminTarget#)
+			
+		]]>
+	</select>
+	
+	<select id="checkAssignDAO.getDetailAssignAction" parameterClass="java.util.HashMap" resultClass="assignedUserVO">
+		<![CDATA[
+			SELECT 		CR.APP_USER_NO, 	AU.APP_USER_NAME
+			FROM 		CHECK_RES CR, 		APP_USER AU
+			WHERE 		CR.APP_USER_NO = AU.APP_USER_NO
+			AND 		CR.ADMIN_ID = #adminTarget#
+			AND			CR.REC_NOTI_NO = #rec_noti_no#
+			AND 		AU.FINAL_SUBMIT_TF = 'T'
+		]]>
+	</select>
+	
+	
+	<select id="checkAssignDAO.getAssignUsrTargetAction" parameterClass="java.util.HashMap" resultClass="java.lang.String">
+		<![CDATA[
+			SELECT 		CR.APP_USER_NO
+			FROM 		CHECK_RES CR, 		APP_USER AU
+			WHERE 		CR.APP_USER_NO = AU.APP_USER_NO
+			AND 		CR.ADMIN_ID = #adminTarget#
+			AND			CR.REC_NOTI_NO = #rec_noti_no#
+			AND 		AU.FINAL_SUBMIT_TF = 'T'
+		]]>
+	</select>
+	
+	<select id="checkAssignDAO.userInfoListAction" parameterClass="java.util.Map" resultClass="checkResVO">
+		<![CDATA[
+			SELECT APP_USER_NO, AFF_NO, REC_FIELD_NO, REC_NOTI_NO
+			FROM APP_USER
+		]]>
+			<isNotNull property="list">
+				WHERE APP_USER_NO
+				<iterate prepend="IN" property="list" open="(" close=")" conjunction=",">
+						#list[]#
+				</iterate>
+			</isNotNull>
+	</select>
+	
+	
+
+
+
+
+
+	<!--
+		페이징 처리위해 조회할 데이터의 전체 row 갯수 를 반환하는 쿼리
+	  -->
+		<select id="checkAssignDAO.selectSampleListTotCnt" parameterClass="pfaVO" resultClass="int">
+		<![CDATA[
+			SELECT 	count(*)
+       				
+				FROM 	COMPANY COM, DEPT DEP, ADMIN AD, CODE_DETAIL CD, AUTH_BY_ADMIN ABA
+				
+				WHERE 	AD.POSITION_CODE=CD.DETAIL_CODE
+				AND   	COM.COMPANY_NO = AD.COMPANY_NO
+				AND  	DEP.DEP_NO = AD.DEP_NO
+				AND   	AD.ENABLE_TF = 'T'
+				AND   	ABA.ADMIN_ID = AD.ADMIN_ID
+				AND   	ABA.AUTH_ID='AUTH2014052100000028'
+				AND   	AD.ADMIN_ID NOT IN(SELECT ADMIN_ID FROM CHECK_USER_BY_REC WHERE REC_NOTI_NO=#rec_noti_no#)
+			]]>
+			
+			<isNotEmpty property="company_no">
+				AND COM.COMPANY_NO = #company_no#
+			</isNotEmpty>
+			<isNotEmpty property="dep_no">
+				AND DEP.DEP_NO = #dep_no#
+			</isNotEmpty>
+			<isNotEmpty property="position_code">
+				AND AD.POSITION_CODE = #position_code#
+			</isNotEmpty>
+			<isNotEmpty property="searchKeyword">
+					<!-- parameterClass의 searchKey값이 "all" 과 같다면 -->
+				<isEqual property="searchCondition" compareValue="admin_id">
+					AND AD.ADMIN_ID LIKE '%'||#searchKeyword#||'%'
+				</isEqual>
+				<isEqual property="searchCondition" compareValue="admin_name">
+					AND AD.ADMIN_NAME LIKE '%'||#searchKeyword#||'%'
+				</isEqual>
+			</isNotEmpty>
+			<![CDATA[
+				ORDER BY AD.ADMIN_NAME
+				]]>
+	</select>
+	
+	<!-- 최종 검토자 리스트 가져오기 -->
+	<select id="checkAssignDAO.getchkUsrListAction" parameterClass="pfaVO" resultClass="adminVO">
+		<![CDATA[
+		SELECT A.*
+		FROM(
+      		SELECT 	 ROWNUM RNUM, S.* 
+            FROM	(
+				SELECT 	COM.COMPANY_NAME, DEP.DEP_NAME, CD.DETAIL_CODE_NAME,
+       				AD.ADMIN_NAME, AD.ADMIN_PHONE_NUM, AD.ADMIN_TEL_NUM, AD.ADMIN_ID
+       				
+			FROM 	COMPANY COM, DEPT DEP, ADMIN AD, CODE_DETAIL CD, AUTH_BY_ADMIN ABA
+			
+			WHERE 	AD.POSITION_CODE=CD.DETAIL_CODE
+			AND   	COM.COMPANY_NO = AD.COMPANY_NO
+			AND  	DEP.DEP_NO = AD.DEP_NO
+			AND   	AD.ENABLE_TF = 'T'
+			AND   	ABA.ADMIN_ID = AD.ADMIN_ID
+			AND   	ABA.AUTH_ID='AUTH2014052100000028'
+			AND   	AD.ADMIN_ID NOT IN(SELECT ADMIN_ID FROM CHECK_USER_BY_REC WHERE REC_NOTI_NO=#rec_noti_no#)
+			]]>
+					
+			<isNotEmpty property="company_no">
+				AND COM.COMPANY_NO = #company_no#
+			</isNotEmpty>
+			<isNotEmpty property="dep_no">
+				AND DEP.DEP_NO = #dep_no#
+			</isNotEmpty>
+			<isNotEmpty property="position_code">
+				AND AD.POSITION_CODE = #position_code#
+			</isNotEmpty>
+			<isNotEmpty property="searchKeyword">
+					<!-- parameterClass의 searchKey값이 "all" 과 같다면 -->
+				<isEqual property="searchCondition" compareValue="admin_id">
+					AND AD.ADMIN_ID LIKE '%'||#searchKeyword#||'%'
+				</isEqual>
+				<isEqual property="searchCondition" compareValue="admin_name">
+					AND AD.ADMIN_NAME LIKE '%'||#searchKeyword#||'%'
+				</isEqual>
+			</isNotEmpty>
+			<![CDATA[
+				ORDER BY AD.ADMIN_NAME
+			)S
+		)A
+		WHERE ROWNUM <= #recordCountPerPage# and RNUM > #firstIndex# 
+		]]>
+	  	</select>
+	  	
+	  	<!--
+	  	해당공고별 검토자 리스트 출력
+	  	  -->
+		<select id="checkAssignDAO.getCheckerListbyNotiAction" resultClass="adminVO">
+		<![CDATA[
+			SELECT 		COM.COMPANY_NAME, DEP.DEP_NAME, CD.DETAIL_CODE_NAME, 
+						AD.ADMIN_NAME, AD.ADMIN_ID, AD.ADMIN_EMAIL_ADDR, 
+						AD.ADMIN_PHONE_NUM, AD.ADMIN_TEL_NUM
+			FROM 		ADMIN AD, COMPANY COM, DEPT DEP, CODE_DETAIL CD
+			WHERE 		AD.COMPANY_NO = COM.COMPANY_NO 
+			AND 		AD.DEP_NO = DEP.DEP_NO
+			AND 		AD.POSITION_CODE = CD.DETAIL_CODE
+			AND 		AD.ADMIN_ID IN(SELECT ADMIN_ID FROM CHECK_USER_BY_REC WHERE REC_NOTI_NO=#rec_noti_no#)
+			AND			AD.ENABLE_TF='T'
+		]]>
+		</select>
+		<!-- 
+		공고별 검토자 물리삭제
+		 -->
+		<delete id="checkAssignDAO.deleteCheckerByNotiAction" parameterClass="java.util.HashMap">
+			DELETE 
+			FROM 	CHECK_USER_BY_REC
+			WHERE	REC_NOTI_NO = #rec_noti_no#
+			
+			AND 	ADMIN_ID
+			<iterate prepend="IN" property="deleteList" open="(" close=")"
+				conjunction=",">
+				#deleteList[]#
+			</iterate>			
+		</delete>
+		
+		<select id="checkAssignDAO.checkCheckerAction" parameterClass="java.util.HashMap" resultClass="java.lang.String">
+		<![CDATA[
+			SELECT ADMIN_ID
+			FROM CHECK_RES
+			WHERE REC_NOTI_NO = #rec_noti_no#
+			
+			AND ADMIN_ID 
+		]]>
+			<iterate prepend="IN" property="deleteList" open="(" close=")"
+				conjunction=",">
+				#deleteList[]#
+			</iterate>
+			
+		<![CDATA[	
+			HAVING COUNT(APP_USER_NO) >= 1
+			GROUP BY ADMIN_ID
+		]]>
+		</select>
+		
+		<delete id="checkAssignDAO.deleteResAction" parameterClass="java.util.HashMap">
+		<![CDATA[
+			DELETE 
+			FROM 	CHECK_RES
+			WHERE	REC_NOTI_NO = #rec_noti_no#			
+			AND 	ADMIN_ID	= #admin_id#
+		]]>
+		</delete>
+		
+		<insert id="checkAssignDAO.insertCheckResAction" parameterClass="java.util.HashMap">
+		<![CDATA[
+			INSERT 	
+			INTO 	CHECK_RES 	(ADMIN_ID, APP_USER_NO, REC_NOTI_NO,
+								WRITER, WRITE_DATE, VERSION, ENABLE_TF)
+			VALUES				(#inputCheckResVO.admin_id#, #insertAppNo#,  #inputCheckResVO.rec_noti_no#,
+								'system', SYSDATE, 1, 'T')
+			
+		]]>
+	</insert>
+	
+	<select id="checkAssignDAO.getCheckResInfoAction" parameterClass="java.util.HashMap" resultClass="checkResVO">
+		<![CDATA[
+			SELECT ADMIN_ID, APP_USER_NO, REC_NOTI_NO
+			FROM CHECK_RES
+			WHERE REC_NOTI_NO = #rec_noti_no#
+			AND ADMIN_ID
+		]]>
+		<iterate prepend="IN" property="adminList" open="(" close=")" conjunction=",">
+			#adminList[]#		
+		</iterate>
+	</select>
+	
+	<delete id="checkAssignDAO.deleteCheckResAction" parameterClass="java.util.HashMap">
+		<![CDATA[
+			DELETE 
+			FROM 	CHECK_RES
+			WHERE	REC_NOTI_NO = #rec_noti_no#
+			AND 	ADMIN_ID = #admin_id#
+			AND 	APP_USER_NO IN
+					(SELECT APP_USER_NO
+					FROM CHECK_RES
+					WHERE 	REC_NOTI_NO = #rec_noti_no#
+					AND		ADMIN_ID	= #admin_id#
+					)
+		]]>
+
+			
+
+	</delete>
+	
+</sqlMap>

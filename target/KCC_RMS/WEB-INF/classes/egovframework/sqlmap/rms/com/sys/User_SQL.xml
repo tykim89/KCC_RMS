@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="userAction">
+
+	<typeAlias alias="adminVO" type="rms.com.sys.vo.AdminVO"/>
+	<typeAlias alias="comVO" type="rms.com.sys.vo.CompanyVO"/>
+	<typeAlias alias="branVO" type="rms.com.sys.vo.BranchVO"/>
+	<typeAlias alias="deptVO" type="rms.com.sys.vo.DeptVO"/>
+	<!--아이디 찾기
+	  -->
+	<select id="userDAO.findIdAction" parameterClass="adminVO" resultClass="java.lang.String">
+		<![CDATA[
+		SELECT NVL(
+					(SELECT ADMIN_ID
+					FROM ADMIN 
+						WHERE ADMIN_NAME=#admin_name# 
+   						AND ENABLE_TF='T'
+						AND ADMIN_EMAIL_ADDR=#admin_email_addr#)
+					, '') 
+		FROM DUAL
+		]]>
+	</select>
+<!--비밀번호초기화
+	  -->
+	<update id="userDAO.pwInitAction" parameterClass="adminVO">
+		<![CDATA[
+		UPDATE 	ADMIN 
+			SET ADMIN_PW='1q2w3e',
+				MODIFIER=#modifier#,
+				MODI_DATE=sysdate,
+				VERSION = VERSION+1
+		WHERE ADMIN_ID=#admin_id#
+		]]>
+	</update>
+<!--계정 등록
+	  -->	
+	<insert id="userDAO.addUserAction" parameterClass="adminVO">
+		<![CDATA[
+		INSERT INTO ADMIN(ADMIN_ID, ADMIN_PW, ADMIN_DIV_CODE, ADMIN_NAME, 
+		POSITION_CODE, ADMIN_EMAIL_ADDR, ADMIN_PHONE_NUM, ADMIN_TEL_NUM, 
+		ADMIN_AUTHO_CODE, IMG_ATT_FILE_CODE, EMAIL_TF, WRITER, WRITE_DATE, 
+		ENABLE_TF, VERSION, DEP_NO, COMPANY_NO, BRANCH_NO) 
+		VALUES(#admin_id#, #admin_pw#, #admin_div#, #admin_name#, 
+		#position_code#, #admin_email_addr# , #admin_phone_num#, 
+		#admin_tel_num#, #admin_autho_code#, #img_att_file_code#, 
+		#email_tf#, #writer#, sysdate, 'T', 1, 
+		#dep_no#, #company_no#, #branch_no#)
+		]]>
+	</insert>
+<!--아이디중복확인
+	  -->	
+	<select id="userDAO.checkOverlapAction" resultClass="java.lang.Integer">
+		<![CDATA[
+		SELECT NVL(
+					(SELECT 	1 
+						FROM 	DUAL 
+						WHERE 	EXISTS (
+							SELECT 		ADMIN_ID 
+								FROM 	ADMIN 
+								WHERE 	ADMIN_ID=#admin_id#
+										)
+					), 0
+				) 
+			FROM DUAL
+		]]>
+	</select>
+<!--기등록 여부 확인
+	  -->		
+	<select id="userDAO.checkPreUserAction" parameterClass="adminVO" resultClass="java.lang.Integer">
+		<![CDATA[
+		SELECT NVL(
+					(SELECT 	1 
+						FROM 	DUAL 
+						WHERE 	EXISTS (
+							SELECT 		ADMIN_ID 
+								FROM 	ADMIN 
+								WHERE 	ADMIN_NAME=#admin_name# 
+								AND 	ADMIN_EMAIL_ADDR=#admin_email_addr#
+										)
+					), 0
+				) 
+			FROM DUAL
+		]]>
+	</select>
+<!--계정정보수정
+	  -->		
+	<update id="userDAO.modiUserByAdminAction" parameterClass="adminVO">
+		<![CDATA[
+		UPDATE ADMIN SET 
+			ADMIN_NAME = #admin_name#, 
+			POSITION_CODE = #position_code#, 
+			ADMIN_EMAIL_ADDR = #admin_email_addr#, 
+			ADMIN_PHONE_NUM = #admin_phone_num#, 
+			ADMIN_TEL_NUM = #admin_tel_num#, 
+			IMG_ATT_FILE_CODE = #img_att_file_code#, 
+			VERSION = VERSION+1, 
+			MODIFIER = #modifier#,
+			MODI_DATE = sysdate,
+			DEP_NO = #dep_no#, 
+			COMPANY_NO = #company_no#, 
+			BRANCH_NO = #branch_no#
+		WHERE 	ADMIN_ID = #admin_id#
+		AND		VERSION = #version#
+		]]>
+	</update>
+	
+	<update id="userDAO.modiUserByUserAction" parameterClass="adminVO">
+		<![CDATA[
+		UPDATE ADMIN SET ADMIN_PW=#admin_pw#,ADMIN_EMAIL_ADDR=#admin_email_addr#, 
+		ADMIN_PHONE_NUM=#admin_phone_num#, ADMIN_TEL_NUM=#admin_tel_num#, 
+		IMG_ATT_FILE_CODE=#img_att_file_code#, VERSION=#version#
+		WHERE ADMIN_ID=#admin_id#
+		]]>
+	</update>
+	
+	<update id="userDAO.deleteUserAction" parameterClass="adminVO">
+		<![CDATA[
+		UPDATE ADMIN SET 
+				ENABLE_TF='F',
+				MODI_DATE=sysdate,
+				MODIFIER=#modifier#,
+				VERSION=VERSION+1
+			WHERE ADMIN_ID=#admin_id#
+		]]>
+	</update>
+	
+<!--계정검색-->
+	
+	<select id="userDAO.getUserListAction" parameterClass="java.util.HashMap" resultClass="adminVO">
+		<![CDATA[
+		SELECT AD.ADMIN_ID, AD.ADMIN_NAME, CD.DETAIL_CODE_NAME, 
+		COM.COMPANY_NAME, DEP.DEP_NAME, AD.ADMIN_EMAIL_ADDR, 
+		AD.ADMIN_PHONE_NUM, AD.ADMIN_TEL_NUM 
+		FROM ADMIN AD, CODE_DETAIL CD, COMPANY COM, DEPT DEP
+		WHERE AD.POSITION_CODE = CD.DETAIL_CODE
+		AND AD.DEP_NO = DEP.DEP_NO 
+		AND AD.ENABLE_TF='T'
+		AND AD.COMPANY_NO = COM.COMPANY_NO
+		]]>
+		<isNotEmpty property="searchValue">
+			<!-- parameterClass의 searchKey값이 "all" 과 같다면 -->
+			<isEqual property="searchKey" compareValue="admin_id">
+				AND AD.ADMIN_ID LIKE '%'||#searchValue#||'%'
+			</isEqual>
+			<isEqual property="searchKey" compareValue="admin_name">
+				AND AD.ADMIN_NAME LIKE '%'||#searchValue#||'%'
+			</isEqual>
+			<isEqual property="searchKey" compareValue="position">
+				AND  CD.DETAIL_CODE_NAME LIKE '%'||#searchValue#||'%'
+			</isEqual>
+			<isEqual property="searchKey" compareValue="company">
+				AND COM.COMPANY_NAME LIKE '%'||#searchValue#||'%'
+			</isEqual>
+			<isEqual property="searchKey" compareValue="dept">
+				AND DEP.DEP_NAME LIKE '%'||#searchValue#||'%'
+			</isEqual>
+			<isEqual property="searchKey" compareValue="admin_email_addr">
+				AND AD.ADMIN_EMAIL_ADDR LIKE '%'||#searchValue#||'%'
+			</isEqual>
+			<isEqual property="searchKey" compareValue="admin_phone_num">
+				AND AD.ADMIN_PHONE_NUM LIKE '%'||#searchValue#||'%'
+			</isEqual>
+			<isEqual property="searchKey" compareValue="admin_tel_num">
+				AND AD.ADMIN_TEL_NUM LIKE '%'||#searchValue#||'%'
+			</isEqual>
+		</isNotEmpty>
+	</select>
+<!--계정검색끝  -->
+<!--계정상세조회  -->
+	<select id="userDAO.getUserDetailAction" resultClass="adminVO">
+		<![CDATA[
+		SELECT 		AD.ADMIN_ID, AD.ADMIN_NAME, CD.DETAIL_CODE_NAME, 
+					AD.POSITION_CODE, AD.DEP_NO, AD.COMPANY_NO, AD.BRANCH_NO,
+					COM.COMPANY_NAME, DEP.DEP_NAME, BRN.BRANCH_NAME, AD.ADMIN_EMAIL_ADDR, 
+					AD.ADMIN_PHONE_NUM, AD.ADMIN_TEL_NUM, AD.ADMIN_AUTHO_CODE, AD.IMG_ATT_FILE_CODE,
+					AD.VERSION
+		FROM 		ADMIN AD, CODE_DETAIL CD, COMPANY COM, DEPT DEP, BRANCH BRN 
+			WHERE 	AD.POSITION_CODE = CD.DETAIL_CODE
+			AND AD.DEP_NO = DEP.DEP_NO 
+			AND AD.COMPANY_NO = COM.COMPANY_NO
+			AND AD.BRANCH_NO = BRN.BRANCH_NO
+			AND AD.ENABLE_TF='T'
+			AND	ADMIN_ID=#admin_id#
+		
+		]]>
+	</select>
+<!--계정상세조회 끝  -->
+<!-- 회사 목록 조회 -->
+	<select id="userDAO.getCompanyListAction" resultClass="comVO">
+		<![CDATA[
+		SELECT 	COMPANY_NO, COMPANY_NAME 
+		FROM 	COMPANY
+		WHERE 	ENABLE_TF='T'
+			ORDER BY CAST(SORT_SEQ AS INT) ASC
+		]]>
+	</select>
+<!-- 회사 목록 조회 끝 -->
+<!-- 지사 목록 조회 -->
+	<select id="userDAO.getBranchListAction" resultClass="branVO">
+		<![CDATA[
+		SELECT 	BRANCH_NO, BRANCH_NAME 
+		FROM 	BRANCH
+		WHERE 	ENABLE_TF='T'
+			ORDER BY CAST(SORT_SEQ AS INT) ASC
+		]]>
+	</select>
+<!-- 지사 목록 조회 끝 -->
+<!-- 부서 목록 조회 -->
+	<select id="userDAO.getDeptListAction" resultClass="deptVO">
+		<![CDATA[
+		SELECT 	DEP_NO, DEP_NAME 
+		FROM 	DEPT
+		WHERE 	ENABLE_TF='T'
+			ORDER BY DEP_NAME ASC
+		]]>
+	</select>
+<!-- 부서 목록 조회 끝 -->
+
+
+</sqlMap>

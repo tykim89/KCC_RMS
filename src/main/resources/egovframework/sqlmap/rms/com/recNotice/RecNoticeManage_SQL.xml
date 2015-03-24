@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<!-- 
+	수정일                 수정자                          수정내용
+  =========     =======    =================================================
+  2011.8.26   	 서준식     	 	SSO 로그인을 위한 쿼리 추가
+  2011.09.27    서준식              컬럼 변경 SUB_DN 을  CRTFC_DN_VALUE 로 변경
+  2011.09.28    서준식              컬럼 변경 entrprsmber_id 을  ENTRPRS_MBER_ID 로 변경
+-->
+
+<sqlMap namespace="RecNoticeManage">
+
+
+	<!-- 별칭주기 -->
+	<typeAlias alias="recNotice" type="rms.com.recNotice.vo.RecNoticeVO"/>
+	<typeAlias alias="recFieldVO" type="rms.com.jal.vo.RecFieldVO"/>
+	<typeAlias alias="pagingVO" type="rms.com.qna.qnafrq.vo.DefaultVO"/>
+
+
+
+	<!-- 채용공고 목록조회, 검색조회 -->
+	<select id="recNoticeList" parameterClass="pagingVO" resultClass="recNotice">
+		<![CDATA[ 
+		SELECT 	NO, REC_NOTI_NO,  CAREER_DIV_CODE, REC_YEAR, REC_FIELD_NAME, 
+					REC_NOTI_TITLE, REC_START_DATE, REC_END_DATE, ING, STATE_CODE, HITS
+        FROM (
+        		SELECT ROWNUM RNUM, S.*
+        		FROM (
+						SELECT 	RANK() OVER(ORDER BY RN.WRITE_DATE ASC) AS NO, RN.REC_NOTI_NO,  
+							          (SELECT DETAIL_CODE_NAME 
+							           FROM CODE_DETAIL 
+							           WHERE DETAIL_CODE = CAREER_DIV_CODE ) AS CAREER_DIV_CODE, 
+						            RN.REC_YEAR, RF.REC_FIELD_NAME, RN.REC_NOTI_TITLE, RN.REC_START_DATE, RN.REC_END_DATE, 
+						            CASE 
+                                    	WHEN TO_CHAR(RN.REC_END_DATE, 'YY/MM/DD') >= TO_CHAR(SYSDATE, 'YY/MM/DD')
+	                                      	THEN 'Y'
+	                                    WHEN RN.REC_END_DATE < SYSDATE
+	                                      	THEN 'N'
+                               	    END AS ING,
+							          (SELECT DETAIL_CODE_NAME 
+							           FROM CODE_DETAIL 
+							           WHERE DETAIL_CODE = STATE_CODE ) AS STATE_CODE,
+						            RN.HITS
+						FROM 	REC_NOTI RN, REC_FIELD RF
+						WHERE 	RN.REC_FIELD_NO = RF.REC_FIELD_NO
+						  AND    	RN.ENABLE_TF = 'T'
+			]]>
+			<isEqual property="searchCondition" compareValue="rec_noti_title">
+				AND RN.REC_NOTI_TITLE LIKE UPPER('%'||#searchKeyword#||'%')
+			</isEqual>
+
+			<isEqual property="searchCondition" compareValue="rec_noti_content">
+				AND RN.REC_NOTI_CONTENT LIKE UPPER('%'||#searchKeyword#||'%')
+			</isEqual>
+
+			<isNotEmpty property="rec_year">
+				AND RN.REC_YEAR = #rec_year#
+			</isNotEmpty>
+		
+			<isNotEmpty property="career_div_code">
+				AND RN.CAREER_DIV_CODE  = #career_div_code#
+			</isNotEmpty>
+			
+			<isNotEmpty property="state_code">
+				AND (SELECT DETAIL_CODE_NAME 
+	             		FROM CODE_DETAIL 
+	              		WHERE DETAIL_CODE = STATE_CODE ) = #state_code#
+			</isNotEmpty>
+			
+			<isNotNull property="recFieldList">
+					AND RF.REC_FIELD_NAME
+				<iterate prepend="IN" property="recFieldList" open="(" close=")" conjunction=","> 
+		      	 	#recFieldList[]# 
+		    	</iterate>
+	    	</isNotNull>
+
+		<![CDATA[ 
+			ORDER BY RN.WRITE_DATE DESC
+			
+			)S
+		)
+		
+		WHERE ROWNUM <= #recordCountPerPage# AND RNUM > #firstIndex# 
+		]]>
+	</select>
+	<!--입사지원서 검색/조회 끝  -->
+
+	<!--입사지원서 검색/조회 시작 -->
+	<select id="getRecFieldListAction" resultClass="recFieldVO">
+		<![CDATA[
+			SELECT DISTINCT rec_field_name 
+			FROM REC_FIELD
+		]]>
+	</select>
+	
+	
+	
+	<!-- 채용공고 상세조회 -->
+	<select id="recNoticeContent" parameterClass="String" resultClass="recNotice">
+	<![CDATA[ 
+		SELECT		RN.REC_NOTI_NO, 
+						RF.REC_FIELD_NAME, 
+				           (SELECT DETAIL_CODE_NAME 
+				            FROM CODE_DETAIL 
+				            WHERE DETAIL_CODE = CAREER_DIV_CODE ) AS CAREER_DIV_NAME, 
+                  		RN.CAREER_DIV_CODE,
+			            RP.REC_PROG_NAME, 
+			            AF.APP_FORM_NAME, 
+			            RN.REC_START_DATE, 
+			            RN.REC_END_DATE, 
+			            RN.ANNOUNCE_DATE, 
+			            RN.CHECK_START_DATE, 
+			            RN.CHECK_END_DATE, 
+			            RN.REC_NOTI_TITLE, 
+						RN.REC_NOTI_CONTENT,
+			            RN.REC_YEAR,
+			            RN.REC_FIELD_NO,
+                  		RN.REC_PROG_NO,
+                  		RN.APP_FORM_NO,
+			            ATT.ATT_FILE_NO,
+			            ATT.ATT_FILE_NAME,
+			            ATT.ATT_FILE_ORIG_NAME,
+			            ATT.ATT_FILE_SIZE,
+			            ATT.ATT_FILE_SAVE_PATH,
+				          (SELECT DETAIL_CODE_NAME 
+				            FROM CODE_DETAIL 
+				            WHERE DETAIL_CODE = STATE_CODE ) AS STATE_CODE, 
+			            RN.WRITER, 
+			            RN.WRITE_DATE,
+			            RN.HUBMAIN_VIEW_TF, 
+			            RN.MAIN_VIEW_TF, 
+			            RN.FRONT_VIEW_TF,
+			            CASE 
+	                       	WHEN TO_CHAR(RN.REC_END_DATE, 'YY/MM/DD') >= TO_CHAR(SYSDATE, 'YY/MM/DD')
+	                          	THEN 'Y'
+	                        WHEN RN.REC_END_DATE < SYSDATE
+	                          	THEN 'N'
+                  	    END AS ING
+		FROM 	REC_NOTI RN, REC_FIELD RF, APP_FORM AF, REC_PROG RP, ATT_FILE ATT
+		WHERE 	RN.REC_PROG_NO = RP.REC_PROG_NO
+			AND   RN.REC_FIELD_NO = RF.REC_FIELD_NO
+			AND   RN.APP_FORM_NO = AF.APP_FORM_NO
+			AND	 RN.ATT_FILE_NO = ATT.ATT_FILE_NO
+			AND   RN.REC_NOTI_NO = #rec_noti_no#
+	]]>
+	</select>
+	
+	
+	<!-- 조회수 증가 -->
+	<update id="recNoticeDAO.readcountUp" parameterClass="java.util.HashMap">
+		UPDATE	REC_NOTI
+ 			SET	HITS = HITS+1
+ 		WHERE	REC_NOTI_NO = #rec_noti_no#
+	</update>
+	
+	
+	
+	<!-- 채용공고 등록 -->
+	<insert id="recNoticeInsert" parameterClass="recNotice">
+		INSERT INTO REC_NOTI(REC_NOTI_NO, REC_NOTI_TITLE, REC_NOTI_CONTENT, REC_START_DATE, REC_END_DATE, ANNOUNCE_DATE, WRITER, 
+            				WRITE_DATE, ENABLE_TF, VERSION, HITS, STATE_CODE, REC_FIELD_NO,CHECK_END_DATE, CHECK_START_DATE, REC_YEAR, 
+            				CAREER_DIV_CODE, REC_PROG_NO, APP_FORM_NO, ATT_FILE_NO, HUBMAIN_VIEW_TF, MAIN_VIEW_TF, FRONT_VIEW_TF)
+		VALUES (#rec_noti_no#, #rec_noti_title#, #rec_noti_content#, #rec_start_date#, #rec_end_date#, #announce_date#, #writer#, 
+        				SYSDATE, 'T', 1, 0, #state_code#, #rec_field_no#, #check_end_date#, #check_start_date#, #rec_year#, 
+       					#career_div_code#, #rec_prog_no#, #app_form_no#, NVL(#att_file_no#, 'FILE00000'), #hubmain_view_tf#, #main_view_tf#, #front_view_tf#)
+	</insert>
+	
+	
+	<!-- 채용공고 수정 -->
+	<update id="recNoticeUpdate" parameterClass="recNotice">
+		UPDATE REC_NOTI
+		SET	  REC_NOTI_TITLE = #rec_noti_title#, REC_NOTI_CONTENT = #rec_noti_content#, REC_START_DATE = #rec_start_date#, 
+				  REC_END_DATE = #rec_end_date#, 
+				  ANNOUNCE_DATE = #announce_date#, MODIFIER = #modifier#, MODI_DATE = SYSDATE, VERSION = version + 1,
+        	      STATE_CODE = #state_code#, REC_FIELD_NO = #rec_field_no#, CHECK_END_DATE = #check_end_date#, 
+        	      CHECK_START_DATE = #check_start_date#, REC_YEAR = #rec_year#, CAREER_DIV_CODE = #career_div_code#,
+       		      REC_PROG_NO = #rec_prog_no#, APP_FORM_NO = #app_form_no#, ATT_FILE_NO = NVL(#att_file_no#, 'FILE00000'), 
+       		      HUBMAIN_VIEW_TF = #hubmain_view_tf#, MAIN_VIEW_TF = #main_view_tf#, FRONT_VIEW_TF = #front_view_tf#
+		WHERE  REC_NOTI_NO = #rec_noti_no#
+	</update>
+	
+	
+	<!-- 채용공고 삭제 -->
+	<update id="recNoticeDelete" parameterClass="String">
+		UPDATE  REC_NOTI
+		SET		ENABLE_TF = 'F'
+		WHERE	REC_NOTI_NO = #rec_noti_no#
+	</update>
+	
+	
+	
+		<!-- 페이지 토탈 카운트 -->
+	<select id="recNoticeDAO.selectSampleListTotCnt" parameterClass="pagingVO" resultClass="int">
+		SELECT 	COUNT(*) TOTCNT
+		FROM 	REC_NOTI RN, REC_FIELD RF
+		WHERE 	RN.REC_FIELD_NO = RF.REC_FIELD_NO
+		AND	 	RN.ENABLE_TF = 'T'
+				<isEqual property="searchCondition" compareValue="rec_noti_title">
+					AND UPPER(RN.REC_NOTI_TITLE) LIKE UPPER('%'||#searchKeyword#||'%')
+				</isEqual>
+	
+				<isEqual property="searchCondition" compareValue="rec_noti_content">
+					AND UPPER(RN.REC_NOTI_CONTENT) LIKE UPPER('%'||#searchKeyword#||'%')
+				</isEqual>
+	
+				<isNotEmpty property="rec_year">
+					AND RN.REC_YEAR = #rec_year#
+				</isNotEmpty>
+			
+				<isNotEmpty property="career_div_code">
+					AND RN.CAREER_DIV_CODE  = #career_div_code#
+				</isNotEmpty>
+				
+				<isNotEmpty property="state_code">
+					AND (SELECT DETAIL_CODE_NAME 
+		             		FROM CODE_DETAIL 
+		              		WHERE DETAIL_CODE = STATE_CODE ) = #state_code#
+				</isNotEmpty>
+				
+				<isNotNull property="recFieldList">
+					AND RF.REC_FIELD_NAME
+				<iterate prepend="IN" property="recFieldList" open="(" close=")" conjunction=","> 
+		      	 	#recFieldList[]# 
+		    	</iterate>
+	    	</isNotNull>
+	</select>
+	
+	
+</sqlMap>

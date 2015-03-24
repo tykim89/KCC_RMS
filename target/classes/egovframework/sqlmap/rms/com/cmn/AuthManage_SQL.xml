@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="authManage">
+	<typeAlias  alias="authVO" type="rms.com.cmn.vo.AuthVO"/>
+	<typeAlias  alias="adminByAuthVO" type="rms.com.cmn.vo.AdminByAuthVO"/>
+	<typeAlias  alias="menuVO" type="rms.com.cmn.vo.MenuVO"/>
+
+	<!-- 권한 리스트 가져오기 -->
+	<select id="authDAO.getAuthList" resultClass="authVO">
+		<![CDATA[
+		SELECT *
+		  FROM AUTH
+		 WHERE ENABLE_TF = 'T'
+		]]>
+	</select>
+	
+	<!-- 권한 등록하기 -->
+	<insert id="authDAO.insertAuth" parameterClass="authVO">
+		<![CDATA[
+		INSERT INTO AUTH(AUTH_ID, AUTH_NAME, AUTH_DESCRIPTION, WRITER)
+		VALUES(#auth_id# ,#auth_name# ,#auth_description#, #writer#)
+		]]>
+	</insert>
+	
+	<!-- 권한 삭제하기 -->
+	<update id="authDAO.deleteAuth" parameterClass="java.util.Map">
+		<![CDATA[
+		UPDATE AUTH
+		SET ENABLE_TF = 'F',
+		    MODIFIER = #modifier#,
+		    VERSION = VERSION + 1
+		WHERE AUTH_ID 
+		]]>
+		<iterate prepend="IN" property="deleteTargetList" open="(" conjunction="," close=")">
+   		#deleteTargetList[]#
+  		</iterate>
+	</update>
+	
+	
+	<!-- 권한 수정하기 -->
+	<update id="authDAO.updateAuth" parameterClass="authVO">
+		<![CDATA[
+		UPDATE AUTH
+		SET AUTH_NAME = #auth_name#,
+		    AUTH_DESCRIPTION = #auth_description#,
+		    MODIFIER = #modifier#,
+		    VERSION = VERSION + 1
+		WHERE AUTH_ID = #auth_id#
+		]]>
+	</update>
+	
+	<!-- 사용자별 권한 가져오기 -->
+	<select id="authDAO.getAdminByAuthList" parameterClass="java.util.Map" resultClass="adminByAuthVO">
+		<![CDATA[
+		SELECT COMPANY.COMPANY_NAME, BRANCH.BRANCH_NAME, DEPT.DEP_NAME, ADMIN.POSITION_CODE, ADMIN.ADMIN_NAME, 
+		       ADMIN.ADMIN_DIV_CODE, ADMIN.ADMIN_ID, (SELECT listagg(AUTH_NAME, '/') WITHIN GROUP(ORDER BY SORT_SEQ)
+		                                                FROM AUTH_BY_ADMIN ABA, AUTH
+		                                               WHERE ABA.ADMIN_ID = ADMIN.ADMIN_ID
+		                                                 AND ABA.AUTH_ID = AUTH.AUTH_ID
+		                                                 AND AUTH.ENABLE_TF='T') AS AUTH_LIST
+		FROM ADMIN, COMPANY, BRANCH, DEPT
+		]]>
+		WHERE ADMIN.DEP_NO = DEPT.DEP_NO
+	  	AND ADMIN.ENABLE_TF = 'T'
+	  	AND ADMIN.BRANCH_NO = BRANCH.BRANCH_NO
+	  	AND ADMIN.COMPANY_NO = COMPANY.COMPANY_NO
+		<isNotEmpty prepend="AND" property="companySelect">
+			ADMIN.COMPANY_NO = #companySelect#
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="branchSelect">
+			ADMIN.COMPANY_NO = #branchSelect#
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="deptSelect">
+			ADMIN.COMPANY_NO = #deptSelect#
+		</isNotEmpty>
+		<isEqual property="searchDiv" compareValue="id">
+			<isNotEmpty prepend="AND" property="searchText">
+				ADMIN.ADMIN_ID LIKE #searchText# || '%'
+			</isNotEmpty>
+		</isEqual>
+		<isEqual property="searchDiv" compareValue="name">
+			<isNotEmpty prepend="AND" property="searchText">
+				ADMIN.ADMIN_NAME LIKE #searchText# || '%'
+			</isNotEmpty>
+		</isEqual>
+	</select>
+	
+	<!-- 사용자 소유권한 리스트 가져오기 -->
+	<select id="authDAO.getOwnAuthList" parameterClass="String" resultClass="authVO">
+		<![CDATA[
+		SELECT AUTH.*
+		FROM AUTH_BY_ADMIN ABA, AUTH
+		WHERE ABA.ADMIN_ID = #admin_id#
+		  AND ABA.AUTH_ID = AUTH.AUTH_ID
+		]]>
+	</select>
+
+
+	<!-- 사용자 미소유권한 리스트 가져오기 -->
+	<select id="authDAO.getNotOwnAuthList" parameterClass="String" resultClass="authVO">
+		<![CDATA[
+		SELECT AUTH_ID, AUTH_NAME, AUTH_DESCRIPTION
+		FROM
+		(
+			SELECT AUTH.AUTH_ID, AUTH.AUTH_NAME, AUTH.AUTH_DESCRIPTION, ABA.ADMIN_ID
+			  FROM AUTH, AUTH_BY_ADMIN ABA
+			 WHERE AUTH.ENABLE_TF ='T'
+			   AND AUTH.AUTH_ID = ABA.AUTH_ID(+)
+			   AND #admin_id# = ABA.ADMIN_ID(+)
+		)
+		WHERE ADMIN_ID is null
+		]]>
+	</select>
+	
+	
+	<!-- 사용자별 권한 추가하기 -->
+	<update id="authDAO.addAdminByAuth" parameterClass="java.util.Map">
+		<![CDATA[
+		INSERT ALL
+		]]>
+		<iterate property="modifyTargetList" conjunction=" ">
+		INTO AUTH_BY_ADMIN(ADMIN_ID, AUTH_ID, WRITER)
+   		VALUES (#admin_id#, #modifyTargetList[]#, #writer#)
+  		</iterate>
+  		SELECT * FROM DUAL
+	</update>
+	
+	
+	<!-- 사용자별 권한 제거하기 -->
+	<update id="authDAO.removeAdminByAuth" parameterClass="java.util.Map">
+		<![CDATA[
+		DELETE 
+		FROM AUTH_BY_ADMIN
+		WHERE ADMIN_ID = #admin_id#
+		  AND AUTH_ID
+		]]>
+		<iterate prepend="IN" property="modifyTargetList" open="(" conjunction="," close=")">
+   		#modifyTargetList[]#
+  		</iterate>
+	</update>
+	
+	
+	<!-- 특정 사용자의 사용가능 메뉴 가져오기 -->
+	<select id="authDAO.getAuthorizedMenuList" parameterClass="String" resultClass="menuVO">
+		<![CDATA[
+		SELECT MENU_ID, lpad(' ', (LEVEL-1)*3)||MENU_NAME AS MENU_NAME, PARENT_MENU_ID, URL, MENU_IMG_URL, LOGIN_YN, LEVEL AS DEPTH, SORT_SEQ
+		FROM (
+		      SELECT MENU.*
+		      FROM (SELECT DISTINCT(ABM.MENU_ID)
+		      FROM AUTH_BY_ADMIN ABA, AUTH_BY_MENU ABM
+		      WHERE ABA.ADMIN_ID='jhsun'
+		        AND ABA.AUTH_ID = ABM.AUTH_ID) AUTH_MENU, MENU
+		      WHERE MENU.MENU_ID = AUTH_MENU.MENU_ID
+		        AND MENU.ENABLE_TF ='T'
+		     )
+		START WITH PARENT_MENU_ID is null
+		CONNECT BY PRIOR MENU_ID = PARENT_MENU_ID
+		ORDER SIBLINGS BY SORT_SEQ
+		]]>
+	</select>
+</sqlMap>

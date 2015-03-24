@@ -1,0 +1,148 @@
+@charset "utf-8";
+
+@import url("layout.css");			/* Layout */
+@import url("content.css");			/* Content */
+
+/* Type Selector */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, font, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td  {
+	margin:0px;
+	padding:0px;
+	border:0px;
+
+	line-height:130%;
+}
+body	{
+	font-size:12px;
+	font-family:"돋움", Dotum, Helvetica, Verdana, Arial, sans-serif;
+	background-color:#c6c6c8;
+	background-position:0 0;
+	color:#555;
+	
+}
+header, footer, section, article, aside, nav, hgroup, details, menu, figure, figcaption {display:block;}
+.ir {font-size:0;line-height:0;text-shadow:none;color:transparent !important;overflow:hidden;}
+.ib {display:-moz-inline-stack;display:inline-block;zoom:1;*display:inline;}
+
+/* Anchor */
+a:link				{color:#555; text-decoration:none;}
+a:visited			{color:#555; text-decoration:none;}
+a:hover				{color:#555; text-decoration:none;}
+a:active				{color:#555; text-decoration:none;}
+A:focus 				{color:#555; text-decoration:none;}
+
+table					{width:100%;}
+table, th, td		{border-collapse:collapse; border-spacing:0;}
+table {
+	table-layout: fixed;
+	border-collapse: collapse;
+	border-spacing: 0;
+	word-break:break-all;
+}
+
+
+
+img					{border:0px; vertical-align:top;}
+hr						{display:none;}
+col					{background:none;}
+li						{list-style:none;}
+
+/* floating 을 해제하기 위한 클래스 추가, 의미없는 clear만 있는 gabage source 제거 */
+.clearfix:after		{content:"."; display:block; height:0; clear:both; visibility:hidden;}
+.clearfix				{display: inline-block;}
+/* Hides from IE-mac \*/
+* html .clearfix	{height: 1%;}
+.clearfix				{display: block;}
+/* End hide from IE-mac */
+
+/* Layout Selector */
+.relative				{position:relative;}
+.posiL				{position:absolute; top:0; left:0;}
+.posiR				{position:absolute; top:0; right:0;}
+.floatL				{float:left !important;}
+.floatR				{float:right !important;}
+.alignL				{text-align:left !important;}
+.alignC				{text-align:center !important;}
+.alignR				{text-align:right !important;}
+.alignT				{vertical-align:top !important;}
+.alignM				{vertical-align: middle !important;}
+
+/* Design Style */
+.bgNone				{background:none !important;}
+
+/* Button */
+.btnArea			{overflow:hidden; *zoom:1; text-align:center;}
+.btnL					{float:left;}
+.btnR					{float:right;}
+
+/* Font Style*/
+.font_style_1{color:#046aff;}
+.font_style_2{color:#0f8df7;}
+.num				{font-family: Tahoma;}
+
+
+/* Form Selector */
+
+textarea			{padding:5px 8px; height:70px; line-height:150%; color:#555; border: 1px solid #c5c5c5; font-family:"돋움", Dotum, Verdana, Tahoma;}
+button				{margin:0; padding:0; font-size:0; border:none; background:none; width:auto; height:auto; overflow:visible;}
+fieldset				{border:0; margin:0; padding:0;}
+legend,caption				{display:none}
+form *				{vertical-align:middle;}
+select				{height:19px; border:1px solid #ccc; font-size:12px; font-family:"돋움",dotum;}
+
+/* Margin(주요 레이아웃 간격 조정을 위한 클래스로 최소한으로 생성) */
+
+.mt5 {
+	MARGIN-TOP: 5px
+}
+.mt10 {
+	MARGIN-TOP: 10px
+}
+.mt15 {
+	MARGIN-TOP: 15px
+}
+.mt20 {
+	MARGIN-TOP: 20px
+}
+.mt25 {
+	MARGIN-TOP: 25px
+}
+.mt30 {
+	MARGIN-TOP: 30px
+}
+.mt35 {
+	MARGIN-TOP: 35px
+}
+.mt40 {
+	MARGIN-TOP: 40px
+}
+.mt45 {
+	MARGIN-TOP: 45px
+}
+.mt50 {
+	MARGIN-TOP: 50px
+}
+.mt55 {
+	MARGIN-TOP: 55px
+}
+.mt60 {
+	MARGIN-TOP: 60px
+}
+
+.mb100 {
+	MARGIN-BOTTOM: 100px;
+}
+
+/* Cursor */
+.cursorHand		{cursor:pointer;}
+.cursorMove		{cursor:move;}
+
+/* Title */
+h1,h2,h3,h4,h5,h6	{letter-spacing:-.1em;}

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="checkResult">
+	<typeAlias alias="checkResVO" type="rms.com.check.vo.CheckResVO" />
+
+
+	<select id="checkResultDAO.getAppUserListAction" parameterClass="java.lang.String" resultClass="checkResVO">
+		<![CDATA[
+			
+		]]>
+	</select>
+	
+	<select id="checkResultDAO.getRecFieldAction" resultClass="checkResVO">
+		<![CDATA[
+			SELECT DISTINCT REC_FIELD_NO, REC_FIELD_NAME
+			FROM REC_FIELD
+		]]>
+	</select>
+	
+	<select id="checkResultDAO.getCareerDivAction" resultClass="checkResVO">
+		<![CDATA[
+			SELECT DETAIL_CODE_NAME AS career_div_name, DETAIL_CODE AS career_div_code
+			FROM CODE_DETAIL
+			WHERE GROUP_CODE = 'CAREER_DIV'
+		]]>
+	</select>
+	
+	<select id="checkResultDAO.getCheckResAction" resultClass="checkResVO">
+		<![CDATA[
+			SELECT DETAIL_CODE_NAME AS check_res_name, DETAIL_CODE AS check_res_code
+			FROM CODE_DETAIL
+			WHERE GROUP_CODE = 'CHECK_RES'
+		]]>
+	</select>
+	
+
+</sqlMap>

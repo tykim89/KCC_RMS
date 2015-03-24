@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="emailSQL">
+
+	<typeAlias alias="emailFormVO" type="rms.com.svc.vo.EmailFormVO"/>
+	<!--
+	이메일 양식 등록
+	  -->
+	<insert id="eamilDAO.addEmailFormAction" parameterClass="emailFormVO">
+		<![CDATA[
+		INSERT INTO EMAIL_FORM 	(EMAIL_FORM_NO, EMAIL_FORM_NAME, EMAIL_FORM_CONTENT,
+								WRITER, WRITE_DATE, ENABLE_TF, VERSION)
+		VALUES					(#email_form_no#, #email_form_name#, #email_form_content#,
+								#writer#, sysdate, 'T', 1)
+		]]>
+	</insert>
+	<!--
+	이메일 양식 목록 조회
+	  -->
+	<select id="emailDAO.getEmailFormListAction" resultClass="emailFormVO">
+		<![CDATA[
+		SELECT 		EMAIL_FORM_NO, EMAIL_FORM_NAME
+			FROM	EMAIL_FORM
+			WHERE	ENABLE_TF='T' 	
+		]]>
+	</select>
+	<!--
+	이메일 양식 상세 조회
+	  -->
+	<select id="emailDAO.getEmailFormDetailAction" resultClass="emailFormVO">
+		<![CDATA[
+		SELECT		EMAIL_FORM_NO, EMAIL_FORM_NAME, EMAIL_FORM_CONTENT
+			FROM 	EMAIL_FORM
+			WHERE	ENABLE_TF='T'
+			AND		EMAIL_FORM_NO=#email_form_no#
+		]]>	
+	</select>
+	<!--
+	이메일 양식 수정
+	  -->
+	<update id="emailDAO.modiEmailFormAction" parameterClass="emailFormVO">
+		<![CDATA[
+		UPDATE EMAIL_FORM 
+					SET 	EMAIL_FORM_NAME=#email_form_name#, EMAIL_FORM_CONTENT=#email_form_content#, 
+							MODIFIER=#modifier#, MODI_DATE=sysdate, VERSION=VERSION+1
+					WHERE	EMAIL_FORM_NO=#email_form_no#
+		]]>
+	</update>
+	<!--
+	이메일 양식 삭제
+	  -->
+	<update id="emailDAO.deleteEmailFormAction">
+		<![CDATA[
+		UPDATE EAMIL_FORM
+					SET		ENABLE_TF='F', MODIFIER=#modifier#, MODI_DATE=sysdate
+					WHERE	EMAIL_FORM_NO
+		]]>	
+		<iterate prepend="IN" property="checkedEmailFormList" open="(" close=")" conjunction=","> 
+      	 #checkedEmailFormList[]# 
+    	</iterate>
+	</update>
+	
+</sqlMap>

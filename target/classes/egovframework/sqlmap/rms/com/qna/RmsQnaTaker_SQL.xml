@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="qnaTaker">
+
+	<typeAlias alias="qnaTakerVO" type="rms.com.qna.qnataker.vo.QnaTakerVO"/>
+	
+	
+<!-- 수신자 목록조회 -->
+	
+	<select id="qnaTakerDAO.qnaTakerBoardlist" parameterClass="java.util.HashMap" resultClass="qnaTakerVO">
+		<![CDATA[
+
+		SELECT AD.ADMIN_ID, AD.ADMIN_NAME, CD.DETAIL_CODE_NAME, AD.EMAIL_TF,
+		COM.COMPANY_NAME, DEP.DEP_NAME, AD.ADMIN_EMAIL_ADDR, 
+		AD.ADMIN_PHONE_NUM, AD.ADMIN_TEL_NUM, AU.AUTH_NAME
+		FROM ADMIN AD, CODE_DETAIL CD, COMPANY COM, DEPT DEP, AUTH_BY_ADMIN ABA, AUTH AU
+		WHERE AD.POSITION_CODE = CD.DETAIL_CODE
+		AND AD.DEP_NO = DEP.DEP_NO 
+		AND AD.COMPANY_NO = COM.COMPANY_NO
+		AND ABA.AUTH_ID = AU.AUTH_ID
+		AND AD.ADMIN_ID = ABA.ADMIN_ID
+
+		]]>
+		<isNotEmpty property="searchValue">
+			<!-- parameterClass의 searchKey값이 "all" 과 같다면 -->
+			<isEqual property="searchKey" compareValue="admin_name">
+				AND AD.ADMIN_NAME LIKE '%'||#searchValue#||'%'
+			</isEqual>
+			<isEqual property="searchKey" compareValue="dept">
+				AND DEP.DEP_NAME LIKE '%'||#searchValue#||'%'
+			</isEqual>
+			<isEqual property="searchKey" compareValue="auth_name">
+				AND AU.AUTH_NAME LIKE '%'||#searchValue#||'%'
+			</isEqual>
+
+		</isNotEmpty>
+	</select>
+<!-- 목록조회 끝  -->
+
+	<update id="qnaTakerDAO.qnaTakerUpdate" parameterClass="qnaTakerVO">
+		<![CDATA[
+		UPDATE ADMIN SET
+	 	EMAIL_TF = 'T',
+		MODIFIER='관리자',
+		MODI_DATE=SYSDATE,
+		VERSION = VERSION+1	
+		
+		]]>		
+	</update>
+
+	<update id="qnaTakerDAO.nonqnaTakerUpdate" parameterClass="qnaTakerVO">
+		<![CDATA[
+		UPDATE ADMIN SET
+		EMAIL_TF = 'F',
+		MODIFIER='관리자',
+		MODI_DATE=SYSDATE,
+		VERSION = VERSION+1	
+		WHERE ADMIN_ID = #admin_id#
+		]]>	
+	</update>
+
+
+</sqlMap>

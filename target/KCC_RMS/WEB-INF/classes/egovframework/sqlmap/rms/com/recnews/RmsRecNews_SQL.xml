@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="RmsrecNews">
+
+	<typeAlias  alias="pagingVO" type="rms.com.qna.qnafrq.vo.DefaultVO"/>
+	<typeAlias alias="recNews" type="rms.com.recnews.vo.RecnewsVO"/>
+	<resultMap id="recNews" class="rms.com.recnews.vo.RecnewsVO">
+		<result property="rec_news_no" column="REC_NEWS_NO"/>
+		<result property="rec_news_title" column="REC_NEWS_TITLE"/>
+		<result property="rec_news_content" column="REC_NEWS_CONTENT"/>
+		<result property="writer" column="WRITER"/>
+		<result property="write_date" column="WRITE_DATE"/>	
+		<result property="modifier" column="MODIFIER"/>
+		<result property="modi_date" column="MODI_DATE"/>	
+		<result property="enable_tf" column="ENABLE_TF"/>
+		<result property="version" column="VERSION"/>
+		<result property="rec_news_hits" column="REC_NEWS_HITS"/>
+		<result property="hubmain_view_tf" column="HUBMAIN_VIEW_TF"/>
+		<result property="main_view_tf" column="MAIN_VIEW_TF"/>
+		<result property="front_view_tf" column="FRONT_VIEW_TF"/>		
+	</resultMap>
+	
+<!-- 	<select id="recnewsDAO.recnewsBoardlist" parameterClass="java.util.HashMap"  resultMap="recNews"> -->
+<!-- 	 	 SELECT REC_NEWS_NO, REC_NEWS_TITLE, REC_NEWS_CONTENT, WRITER, WRITE_DATE, MODIFIER, MODI_DATE, ENABLE_TF, VERSION, REC_NEWS_HITS, HUBMAIN_VIEW_TF,  -->
+<!-- 	 	 MAIN_VIEW_TF, FRONT_VIEW_TF -->
+<!-- 		 FROM REC_NEWS -->
+<!-- 		 WHERE REC_NEWS_NO = REC_NEWS_NO -->
+<!-- 		 <isNotEmpty property="searchValue"> -->
+<!-- 		 	<isEqual property="searchKey" compareValue="title"> -->
+<!-- 		 		AND REC_NEWS_TITLE LIKE '%'||#searchValue#||'%' -->
+<!-- 		 	</isEqual> -->
+<!-- 		 	<isEqual property="searchKey" compareValue="content"> -->
+<!-- 		 		AND REC_NEWS_CONTENT LIKE '%'||#searchValue#||'%' -->
+<!-- 		 	</isEqual> -->
+<!-- 		 </isNotEmpty> -->
+		
+<!-- 	</select> -->
+
+	<select id="recnewsDAO.recnewsBoardlist" parameterClass="pagingVO" resultClass="recNews">
+	 	SELECT 
+	 		REC_NEWS_NO, REC_NEWS_TITLE, REC_NEWS_CONTENT, WRITER, WRITE_DATE, 
+			MODIFIER, MODI_DATE, ENABLE_TF, VERSION, REC_NEWS_HITS, HUBMAIN_VIEW_TF, 
+			MAIN_VIEW_TF, FRONT_VIEW_TF, NUM
+		FROM (
+			SELECT ROWNUM RNUM, S.*
+			FROM (
+				SELECT 
+		 			REC_NEWS_NO, REC_NEWS_TITLE, REC_NEWS_CONTENT, WRITER, WRITE_DATE, 
+					MODIFIER, MODI_DATE, ENABLE_TF, VERSION, REC_NEWS_HITS, HUBMAIN_VIEW_TF, 
+					MAIN_VIEW_TF, FRONT_VIEW_TF, RANK() OVER(ORDER BY WRITE_DATE ASC) AS NUM
+				FROM REC_NEWS
+				WHERE REC_NEWS_NO = REC_NEWS_NO
+				AND ENABLE_TF = 'T'
+			 	<isEqual prepend="AND" property="searchCondition" compareValue="title">
+			 		REC_NEWS_TITLE LIKE '%'||#searchKeyword#||'%'
+			 	</isEqual>
+			 	<isEqual prepend="AND" property="searchCondition" compareValue="content">
+			 		REC_NEWS_CONTENT LIKE '%'||#searchKeyword#||'%'
+			 	</isEqual>
+			 	ORDER BY WRITE_DATE DESC
+			)S	
+		)A
+		
+			<![CDATA[ WHERE ROWNUM <= #recordCountPerPage# and RNUM > #firstIndex# ORDER BY WRITE_DATE DESC]]>
+	</select>
+
+	<select id="selectrecnewsList" resultMap="recNews">
+		<![CDATA[
+			SELECT REC_NEWS_NO, REC_NEWS_TITLE, REC_NEWS_CONTENT, 
+			 WRITER, WRITE_DATE 
+			 FROM REC_NEWS
+		]]>
+	</select>
+	
+	<select id="recnewsDAO.recnewsBoarddetail" resultMap="recNews">
+	 	 SELECT REC_NEWS_NO, REC_NEWS_TITLE, REC_NEWS_CONTENT, WRITER, WRITE_DATE, MODIFIER, MODI_DATE, ENABLE_TF, VERSION, REC_NEWS_HITS, HUBMAIN_VIEW_TF, MAIN_VIEW_TF, FRONT_VIEW_TF
+		 FROM REC_NEWS
+		 WHERE REC_NEWS_NO = #rec_news_no#
+
+	</select>
+	
+	<update id="recnewsDAO.readcountUp" parameterClass="java.util.HashMap">
+	UPDATE REC_NEWS
+   	SET REC_NEWS_HITS = REC_NEWS_HITS+1
+ 	WHERE REC_NEWS_NO = #rec_news_no#
+	</update>
+	
+	<insert id="recnewsDAO.recnewsInsertBoard" parameterClass="recNews">	
+	INSERT INTO REC_NEWS (REC_NEWS_NO, REC_NEWS_TITLE, REC_NEWS_CONTENT, WRITER, WRITE_DATE, ENABLE_TF, VERSION, REC_NEWS_HITS, HUBMAIN_VIEW_TF, MAIN_VIEW_TF, FRONT_VIEW_TF) 
+	VALUES (#rec_news_no#,#rec_news_title#, #rec_news_content#, #writer#,SYSDATE, 'T', '1', '0', #hubmain_view_tf#, #main_view_tf#, #front_view_tf#)	
+	</insert>
+	
+	<update id="recnewsDAO.recnewsUpdateBoard" parameterClass="recNews">
+	<![CDATA[
+		UPDATE REC_NEWS SET 
+		REC_NEWS_TITLE=#rec_news_title#,
+		REC_NEWS_CONTENT=#rec_news_content#,
+		MODIFIER = #writer#,
+		MODI_DATE=SYSDATE,
+		HUBMAIN_VIEW_TF=#hubmain_view_tf#, 
+		MAIN_VIEW_TF=#main_view_tf#, 
+		FRONT_VIEW_TF=#front_view_tf#
+		WHERE REC_NEWS_NO=#rec_news_no#
+	]]>
+	</update>
+
+	<update id="recnewsDAO.recnewsDeleteDetailBoard">
+			<![CDATA[
+			UPDATE REC_NEWS SET
+			MODIFIER = #writer#,
+			MODI_DATE=SYSDATE,
+			ENABLE_TF = 'F'
+			WHERE REC_NEWS_NO = #rec_news_no#
+		]]>	
+	</update>
+	
+		<update id="recnewsDAO.recnewsDeleteBoard" parameterClass="java.util.HashMap">
+		<![CDATA[
+			UPDATE REC_NEWS SET
+			MODIFIER = #writer#,
+			MODI_DATE=SYSDATE,
+			VERSION = VERSION+1,
+			ENABLE_TF = 'F'
+			WHERE REC_NEWS_NO	
+		]]>					
+		<iterate prepend="IN" property="checkList" open="(" close=")" conjunction=","> 
+      	 #checkList[]# 
+    	</iterate>   
+	</update>
+	
+	
+	
+	
+	<select id="recnewsDAO.selectSampleListTotCnt" parameterClass="pagingVO" resultClass="int">
+			SELECT COUNT(*) totcnt
+			FROM REC_NEWS
+			WHERE REC_NEWS_NO = REC_NEWS_NO
+			AND ENABLE_TF = 'T'
+			 	<isEqual prepend="AND" property="searchCondition" compareValue="title">
+			 		REC_NEWS_TITLE LIKE '%'||#searchKeyword#||'%'
+			 	</isEqual>
+			 	<isEqual prepend="AND" property="searchCondition" compareValue="content">
+			 		REC_NEWS_CONTENT LIKE '%'||#searchKeyword#||'%'
+			 	</isEqual>	
+	</select>
+	
+	
+</sqlMap>

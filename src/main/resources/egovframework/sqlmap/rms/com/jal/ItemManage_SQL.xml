@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap>
+	<typeAlias alias="itemVO" type="rms.com.jal.vo.ItemVO"/>
+	
+	<insert id="itemManageDAO.addItemAction" parameterClass="itemVO">
+		<![CDATA[
+		INSERT INTO CODE_DETAIL(
+			GROUP_CODE, 
+			DETAIL_CODE, 
+			DETAIL_CODE_NAME, 
+			SORT_SEQ, 
+			VAL1, 
+			VAL2, 
+			VAL3, 
+			WRITER, 
+			WRITE_DATE, 
+			ENABLE_TF, 
+			VERSION)
+		VALUES(
+			#group_code#, 
+			#detail_code#, 
+			#detail_code_name#, 
+			#sort_seq#, 
+			#val1#, 
+			#val2#, 
+			#val3#, 
+			#writer#, 
+			sysdate, 
+			'T', 
+			1
+			)
+		]]>
+	</insert>
+	
+<!-- 	<update id="codeManageDAO.addTestItemAction.checkSeq">
+		<![CDATA[
+		UPDATE CODE_DETAIL SET SORT_SEQ = SORT_SEQ+1
+		WHERE (SELECT COUNT(DETAIL_CODE) FROM CODE_DETAIL WHERE SORT_SEQ=#sort_seq# AND group_code='REC_FIELD')=1
+		AND SORT_SEQ >= #sort_seq#
+		AND group_code='REC_FIELD'
+		]]>
+	</update> -->
+	<select id="itemManageDAO.addItemAction.checkSeq" resultClass="java.lang.Integer">
+		<![CDATA[
+		SELECT COUNT(DETAIL_CODE) FROM CODE_DETAIL WHERE SORT_SEQ=#sort_seq#
+		AND GROUP_CODE=#group_code#
+		]]>
+	</select>
+	
+	<select id="itemManageDAO.getItemListAction" resultClass="itemVO">
+	<![CDATA[
+		SELECT DETAIL_CODE, DETAIL_CODE_NAME, SORT_SEQ, VAL1, VERSION 
+		FROM CODE_DETAIL 
+			WHERE GROUP_CODE=#group_code#
+			AND ENABLE_TF ='T'
+				ORDER BY CAST(SORT_SEQ AS INT) ASC
+	]]>
+	</select>
+	
+	<update id="itemManageDAO.modiItemAction" parameterClass="itemVO">
+	<![CDATA[
+		UPDATE CODE_DETAIL 
+			SET DETAIL_CODE_NAME=#detail_code_name#, 
+				SORT_SEQ=#sort_seq#, 
+				VAL1 = #val1#,
+				MODIFIER=#modifier#, 
+				MODI_DATE=sysdate, 
+				VERSION=VERSION+1
+			WHERE DETAIL_CODE = #detail_code#
+	]]>
+	</update>
+	
+	<update id="itemManageDAO.deleteItemAction" parameterClass="java.util.HashMap">
+	<![CDATA[
+		UPDATE CODE_DETAIL SET 
+			ENABLE_TF = 'F',
+			MODIFIER=#modifier#, 
+			MODI_DATE=sysdate, 
+			VERSION=VERSION+1
+		WHERE DETAIL_CODE
+	]]>
+	<iterate prepend="IN" property="deleteTargetList" open="(" close=")" conjunction=","> 
+      	 #deleteTargetList[]# 
+    	</iterate>
+	</update>
+	
+	<!-- 버전 체크 -->
+	<select id="itemManageDAO.checkVersionAction" resultClass="java.lang.Integer">
+	<![CDATA[
+		SELECT VERSION 
+			FROM CODE_DETAIL
+			WHERE DETAIL_CODE=#detail_code#
+	]]>
+	</select>
+	
+	
+	
+	<!-- 채용절차항목목록에서 사용항목목록 -->
+	<select id="itemManageDAO.useStepItem" resultClass="itemVO">
+		SELECT DETAIL_CODE, DETAIL_CODE_NAME, SORT_SEQ, VAL1, VERSION 
+		FROM CODE_DETAIL 
+			WHERE GROUP_CODE=#group_code#
+			AND ENABLE_TF ='T'
+				ORDER BY CAST(SORT_SEQ AS INT) ASC
+	</select>
+	
+</sqlMap>
